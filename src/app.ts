@@ -1,12 +1,17 @@
-/** Stateless Streamable HTTP: one McpServer + transport per POST /mcp, plus GET /healthz. */
+/**
+ * Stateless Streamable HTTP: one McpServer + transport per POST /mcp, plus GET /healthz.
+ * With `web` set, the same process also serves the simulated voice UI at / and the agent at /api/*.
+ */
 import { createServer as createHttpServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
+import type { AddressInfo } from 'node:net';
+import { handleWeb, type WebOptions } from './web.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { LATEST_PROTOCOL_VERSION } from '@modelcontextprotocol/sdk/types.js';
 import { createServer, SERVER_NAME, SERVER_VERSION, type Deps } from './server.js';
 
 const MAX_BODY = 1_000_000;
 
-function readBody(req: IncomingMessage): Promise<unknown> {
+export function readBody(req: IncomingMessage): Promise<unknown> {
     return new Promise((resolve, reject) => {
         let size = 0;
         const chunks: Buffer[] = [];
@@ -47,13 +52,18 @@ export function originAllowed(origin: string | undefined, extra: string[]): bool
     }
 }
 
-export function createApp(deps: Deps, opts: { allowedOrigins?: string[] } = {}): Server {
+export function createApp(deps: Deps, opts: { allowedOrigins?: string[]; web?: WebOptions } = {}): Server {
     const allowed = opts.allowedOrigins ?? [];
-    return createHttpServer(async (req, res) => {
+    const app: Server = createHttpServer(async (req, res) => {
         const url = new URL(req.url ?? '/', 'http://localhost');
         if (url.pathname === '/healthz' && req.method === 'GET') {
             res.writeHead(200, { 'Content-Type': 'application/json' })
                 .end(JSON.stringify({ ok: true, name: SERVER_NAME, version: SERVER_VERSION, protocol: LATEST_PROTOCOL_VERSION }));
+            return;
+        }
+        if (opts.web && url.pathname !== '/mcp') {
+            const selfMcp = `http://127.0.0.1:${(app.address() as AddressInfo).port}/mcp`;
+            await handleWeb(req, res, url, { ...opts.web, mcpUrl: opts.web.mcpUrl ?? selfMcp }, allowed);
             return;
         }
         if (url.pathname !== '/mcp') {
@@ -90,4 +100,5 @@ export function createApp(deps: Deps, opts: { allowedOrigins?: string[] } = {}):
             if (!res.headersSent) jsonRpcError(res, 500, -32603, `Internal error: ${(e as Error).message}`);
         }
     });
+    return app;
 }
