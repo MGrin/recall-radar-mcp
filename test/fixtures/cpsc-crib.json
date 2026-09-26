@@ -1,0 +1,84 @@
+[
+ {
+  "RecallID": 10904,
+  "RecallNumber": "26669",
+  "RecallDate": "2026-08-06T00:00:00",
+  "Description": "This recall involves Voomf-branded play yard mattresses and crib mattresses. The tri-fold aftermarket play yard mattresses are white with a neutral-colored letter or balloon print and measure about 38 inches by 26 inches by 3 inches. \"Product Model: BYL001\" is printed on a label inside the mattress cover. The full-sized crib mattresses are white with an aquamarine band and a zipper along the sides, and measure about 25 inches by 27 inches by 5.5 inches. \"voomf\" is printed on a label on the side of the mattress.",
+  "URL": "https://www.cpsc.gov/Recalls/2026/Play-Yard-and-Crib-Mattresses-Recalled-Due-to-Risk-of-Serious-Injury-or-Death-from-Entrapment-and-Fire-Hazards-Violate-Mandatory-Standards-for-Mattresses-Sold-on-Amazon-by-Voomf",
+  "Title": "Play Yard and Crib Mattresses Recalled Due to Risk of Serious Injury or Death from Entrapment and Fire Hazards; Violate Mandatory Standards for Mattresses; Sold on Amazon by Voomf",
+  "ConsumerContact": "Voomf by email at voomfrecall@outlook.com.",
+  "LastPublishDate": "2026-08-07T00:00:00",
+  "Products": [
+   {
+    "Name": "Voomf Play Yard and Crib Mattresses",
+    "Description": "",
+    "Model": "",
+    "Type": "",
+    "CategoryID": "",
+    "NumberOfUnits": "About 2,401"
+   }
+  ],
+  "Inconjunctions": [],
+  "Images": [
+   {
+    "URL": "https://www.cpsc.gov/s3fs-public/voomf-1.jpg",
+    "Caption": "Recalled Voomf Tri-Fold Play Yard Mattress – letters print"
+   },
+   {
+    "URL": "https://www.cpsc.gov/s3fs-public/voomf-2.jpg",
+    "Caption": "Recalled Voomf Tri-Fold Play Yard Mattress – balloons print"
+   },
+   {
+    "URL": "https://www.cpsc.gov/s3fs-public/voomf-3.gif",
+    "Caption": "\"Product Model: BYL001\" is printed on a label inside the cover of the recalled Voomf play yard mattresses"
+   },
+   {
+    "URL": "https://www.cpsc.gov/s3fs-public/voomf-4.jpg",
+    "Caption": "Recalled Voomf Full-sized Crib Mattress"
+   }
+  ],
+  "Injuries": [
+   {
+    "Name": "CPSC has received one report of inadequate mattress fit. No injuries have been reported."
+   }
+  ],
+  "Manufacturers": [],
+  "Retailers": [
+   {
+    "Name": "Online at Amazon.com from January 2026 through May 2026 for between $40 and $87.",
+    "CompanyID": ""
+   }
+  ],
+  "Importers": [
+   {
+    "Name": "Shanghaiyuejiuyaoguojimaoyiyouxiangongsi (Shanghai Yuejiuyao International Trade Co., Ltd.), dba Voomf, of China",
+    "CompanyID": ""
+   }
+  ],
+  "Distributors": [],
+  "SoldAtLabel": null,
+  "ManufacturerCountries": [
+   {
+    "Country": "China"
+   }
+  ],
+  "ProductUPCs": [],
+  "Hazards": [
+   {
+    "Name": "The recalled mattresses violate the mandatory safety standard for crib mattresses because the mattresses may not adequately fit certain play yards, posing a deadly entrapment hazard. Babies can suffocate in gaps between an undersized mattress, or extra padding, and side walls of a product, especially when the infant's face becomes trapped against the side and the mattress, preventing the infant from breathing. Furthermore, the full-sized crib mattresses violate the mandatory flammability standard for mattress sets, posing a risk of serious injury or death from fire.",
+    "HazardType": "",
+    "HazardTypeID": ""
+   }
+  ],
+  "Remedies": [
+   {
+    "Name": "Consumers should stop using the mattresses immediately and contact Voomf for a full refund. Consumers will be asked to destroy the mattresses by writing in permanent marker \"Recalled,\" cutting the play yard mattress in half and cutting the full-sized mattress cover diagonally across the entire mattress using scissors, and to send a photo of the destroyed mattress to voomfrecall@outlook.com. Consumers should then dispose of the recalled product in accordance with local and/or state disposal procedures."
+   }
+  ],
+  "RemedyOptions": [
+   {
+    "Option": "Refund"
+   }
+  ]
+ }
+]

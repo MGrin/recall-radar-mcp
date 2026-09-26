@@ -1,0 +1,39 @@
+{
+  "name": "recall-radar-mcp",
+  "version": "0.1.0",
+  "description": "Household recall radar: an MCP server (Streamable HTTP) over public CPSC, openFDA and EMA data, built for voice assistants.",
+  "license": "MIT",
+  "author": "Nikita Grishin Limited",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "recall-radar-mcp": "dist/http.js"
+  },
+  "main": "dist/http.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "npm run build && node dist/http.js",
+    "start:stdio": "npm run build && node dist/stdio.js",
+    "test": "vitest run",
+    "test:live": "LIVE=1 vitest run test/live.test.ts",
+    "call": "node scripts/call.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.30.1",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.4",
+    "typescript": "5.9.3",
+    "vitest": "3.2.7"
+  },
+  "files": [
+    "dist",
+    "scripts",
+    "README.md",
+    "LICENSE"
+  ]
+}
