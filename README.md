@@ -1,4 +1,4 @@
-# Recall Radar — an MCP server for "Alexa, has anything in my house been recalled?"
+# Recall Radar — an MCP server and voice front end for "has anything in my house been recalled?"
 
 A self-hosted [Model Context Protocol](https://modelcontextprotocol.io) server that lets a voice
 assistant answer household safety questions from **public government recall data**:
@@ -20,17 +20,29 @@ stateless, `@modelcontextprotocol/sdk` 1.30.1.
 
 ## Run it (one command)
 
-Node 20 or newer:
+Node 20 or newer. One process serves the MCP server at `/mcp`, the voice UI at `/` and the agent at
+`POST /api/ask`:
 
 ```sh
 npm ci && npm start
 # recall-radar MCP server: http://127.0.0.1:3000/mcp (health: /healthz, ...)
+# Recall Radar voice UI:   http://127.0.0.1:3000/  (agent: POST /api/ask, model: Scripted mode, no LLM)
 ```
+
+**Judge path.**
+
+1. **No key, scripted mode.** `npm start`, open <http://127.0.0.1:3000/>. The badge reads *Scripted mode,
+   no LLM*: a fixed phrase-to-tool mapping stands in for the model, but the MCP calls and the recall data
+   are real and live. Try the suggestion chips, or drive it from the URL:
+   `http://127.0.0.1:3000/?q=Watch%20my%20crib%20mattress&q=Has%20anything%20in%20my%20house%20been%20recalled%3F`
+2. **With a model.** `OPENAI_API_KEY=sk-... npm start`. The badge reads *OpenAI · gpt-6-luna* and any
+   phrasing works.
 
 Or Docker:
 
 ```sh
 docker build -t recall-radar-mcp . && docker run --rm -p 3000:3000 recall-radar-mcp
+docker run --rm -p 3000:3000 -e OPENAI_API_KEY recall-radar-mcp   # with a model
 ```
 
 | env | default | meaning |
@@ -39,12 +51,55 @@ docker build -t recall-radar-mcp . && docker run --rm -p 3000:3000 recall-radar-
 | `HOST` | `127.0.0.1` (`0.0.0.0` in Docker) | bind address |
 | `WATCHLIST_PATH` | `./data/watchlist.json` | where the household watchlist is stored |
 | `ALLOWED_ORIGINS` | *(none)* | extra browser `Origin`s allowed besides localhost (comma-separated, `*` for any) |
+| `MODEL_PROVIDER` | `openai` if `OPENAI_API_KEY` is set, else `scripted` | `openai`, `ollama` or `scripted` |
+| `OPENAI_API_KEY` | *(none)* | OpenAI key; never logged or sent to the browser |
+| `OPENAI_MODEL` | `gpt-6-luna` | any Chat Completions model with function calling |
+| `OPENAI_BASE_URL` | `https://api.openai.com/v1` | for an OpenAI-compatible gateway |
+| `OLLAMA_URL` / `OLLAMA_MODEL` | `http://127.0.0.1:11434` / `llama3.1` | Ollama's OpenAI-compatible endpoint (`/v1/chat/completions`) |
+| `MCP_URL` | this process's own `/mcp` | point the agent at another Recall Radar MCP server |
 
-Endpoints: `POST /mcp` (MCP Streamable HTTP, stateless: no session id, no GET stream) and `GET /healthz`.
+Endpoints: `POST /mcp` (MCP Streamable HTTP, stateless: no session id, no GET stream), `GET /healthz`,
+`GET /` (the UI), `POST /api/ask` (`{"q": "...", "history": [...]}`), `GET /api/config`, `GET /api/watchlist`.
 A stdio entry is also included: `npm run start:stdio`.
 
 If your machine reaches the internet only through an HTTP proxy, Node's built-in `fetch` ignores
-`HTTPS_PROXY` unless you set `NODE_USE_ENV_PROXY=1` (Node 24+).
+`HTTPS_PROXY` unless you set `NODE_USE_ENV_PROXY=1` (Node 24+). That applies to the OpenAI calls too.
+
+## The voice front end (a simulated smart display)
+
+The track allows *"a simulated Alexa+ experience in a web app"*; this is ours, named Recall Radar and
+using no third-party marks.
+
+- **Push to talk**: hold the mic button (or the space bar) and speak; it uses the browser's Web Speech
+  API (`SpeechRecognition`, Chrome, Edge and Safari). Where that is missing the mic is disabled and the
+  text box does the same job.
+- **Spoken reply** through `speechSynthesis`, with a mute toggle; a light bar along the bottom edge shows
+  listening, thinking and speaking.
+- **Tool trace**: a chip for every MCP tool the agent called, with its argument and latency, so a viewer
+  can see the answer came from the MCP server.
+- **Recall cards**: source, date, title, hazard, remedy, the watchlist item it matched, and a link to the
+  official notice.
+- **Household watchlist** panel (add with the + box or by voice, remove with ×; both go through the agent),
+  and a transcript.
+- `?q=...` asks on load; repeat it (`?q=a&q=b`) for a scripted walkthrough, and add `mute=1` for silent
+  capture.
+
+### The agent (`src/agent/`)
+
+`agent.ts` is a real MCP client (SDK `Client` + `StreamableHTTPClientTransport`): per question it
+connects to `/mcp`, lists the tools, maps them to the model's function format and runs the tool-call
+loop, capped at **6 model steps**. Tool results go back to the model as the tool's `structuredContent`.
+A `ModelAdapter` (`types.ts`) is one method: messages + tools in, text or tool calls out.
+
+| adapter | status |
+|---|---|
+| `openai` (`openai.ts`) | OpenAI Chat Completions with tools over plain `fetch`, no SDK. Unit-tested against recorded-shape responses, including a 3-step tool loop. **Not yet run against the live API** (no key on the build machine). |
+| `ollama` | The same class pointed at Ollama's OpenAI-compatible endpoint. **Untested**: Ollama was not installed on the build machine. |
+| `scripted` (`scripted.ts`) | Deterministic: a few phrasings map to one tool call, and the reply is the tool's own `spoken` sentence (first item only). Used by the tests and the no-key demo. |
+
+The system prompt (`prompt.ts`) keeps answers voice-first (two or three sentences: hazard, official
+remedy, what to do now), grounds every claim in a tool result, and forbids medical advice beyond the
+official remedy text.
 
 ## Try it
 
@@ -117,6 +172,10 @@ npm run build        # tsc -> dist/
 npm test             # vitest, against recorded fixtures in test/fixtures (no network)
 LIVE=1 npm test      # also runs test/live.test.ts against the real APIs
 ```
+
+`test/agent.test.ts` runs the agent loop with the scripted adapter against the real MCP server over HTTP
+(upstreams mocked to fixtures), plus the `/api/*` routes and the static UI. `test/openai.test.ts` runs the
+OpenAI adapter against a mocked Chat Completions endpoint, alone and inside a multi-step agent loop.
 
 The end-to-end test starts the HTTP server, connects with the SDK `Client` over
 `StreamableHTTPClientTransport`, checks that protocol `2025-11-25` is negotiated, lists the tools and

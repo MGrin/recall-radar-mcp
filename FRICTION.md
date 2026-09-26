@@ -51,3 +51,34 @@ happened and what we did; nothing here is guessed.
 9. **openFDA food search on `product_description` alone missed hazard words.** A live
    `search_food_recalls` for "listeria" returned nothing because the organism is named in
    `reason_for_recall`, not the product name. The food tool now matches both fields.
+
+## 2026-09-26 — M2, agent loop and voice front end
+
+10. **Tool `inputSchema`s from `listTools()` carry `$schema`.** Every schema the SDK lists (zod converted
+    to JSON Schema) includes `"$schema": "http://json-schema.org/draft-07/schema#"`, even for a tool with
+    no inputs (`{"type":"object","properties":{},"$schema":...}`). Function-calling APIs take a bare JSON
+    Schema object, so the OpenAI adapter strips `$schema` before sending. We did not test whether OpenAI
+    rejects it (no key yet); we strip it to be safe.
+
+11. **A stateless server means a new MCP session per question.** The agent connects, runs `initialize`,
+    `tools/list`, then each `tools/call`, each a separate POST, and closes. Measured locally: connect plus
+    list took 69 ms. Fine for a demo; a long-lived agent would cache the tool list.
+
+12. **The M1 `spoken` field is too long to read aloud.** For a search it names the first *and* second
+    result, each with a long hazard sentence; in the UI that was over 400 characters and pushed the cards
+    below the fold. The scripted adapter now speaks the headline and the first item only; the LLM
+    adapters are told to answer in two or three sentences.
+
+13. **The fixture router returns the same device fixture for any device query.** So in tests
+    `check_my_household` reports thermometer recalls with an empty `matchedItems` for a watched "crib
+    mattress". Live, openFDA filters by the query and this did not happen in our checks. The tests assert
+    on the matched sources only.
+
+14. **OpenAI's default model had to be read off the docs, not assumed.** The models page (read
+    2026-09-26) lists GPT-6 Astra, Sol and Luna; `gpt-6-luna` is the low-cost one, and its model page lists
+    Chat Completions and function calling. We default to it; `OPENAI_MODEL` overrides. Not verified with a
+    live call.
+
+15. **Headless Chromium cannot exercise speech.** `webkitSpeechRecognition` exists in the headless shell
+    (the mic button stayed enabled) but there is no microphone and no voices, so push-to-talk and
+    `speechSynthesis` were checked by code review only; screenshots were driven with `?q=` and the text box.

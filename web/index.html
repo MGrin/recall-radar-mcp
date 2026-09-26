@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="color-scheme" content="dark">
+    <meta name="theme-color" content="#070a0f">
+    <title>Recall Radar</title>
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body data-state="idle">
+<div class="device">
+    <header class="topbar">
+        <div class="brand">
+            <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+                <circle cx="16" cy="16" r="14" fill="none" stroke="currentColor" stroke-opacity=".35" stroke-width="1.5"/>
+                <circle cx="16" cy="16" r="8.5" fill="none" stroke="currentColor" stroke-opacity=".55" stroke-width="1.5"/>
+                <path d="M16 16 L16 2 A14 14 0 0 1 28.1 9 Z" fill="currentColor" fill-opacity=".45"/>
+                <circle cx="16" cy="16" r="2.4" fill="currentColor"/>
+                <circle cx="22.5" cy="8.8" r="1.8" fill="#ffb347"/>
+            </svg>
+            <span class="brand-name">Recall Radar</span>
+        </div>
+        <div class="topbar-right">
+            <span id="mode" class="mode" title="Which model answers">…</span>
+            <button id="mute" class="icon-btn" type="button" aria-pressed="false" title="Mute spoken replies">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path class="spk" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="on" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/><path class="off" d="M16 9l6 6M22 9l-6 6"/></svg>
+            </button>
+            <time id="clock" class="clock"></time>
+        </div>
+    </header>
+
+    <main class="stage">
+        <section class="answer" aria-live="polite">
+            <div class="radar" aria-hidden="true"><div class="sweep"></div></div>
+            <p id="heard" class="heard">Say or type a question</p>
+            <p id="reply" class="reply">Ask me whether anything in your home has been recalled: a product, a food or a medicine.</p>
+            <div id="trace" class="trace" aria-label="MCP tools called"></div>
+            <div id="cards" class="cards"></div>
+            <p class="disclaimer">Public data from US CPSC, US FDA and the European Medicines Agency. Not medical or safety advice: check the linked notice, and ask a pharmacist or doctor about medicines.</p>
+        </section>
+
+        <aside class="side">
+            <section class="panel">
+                <h2>Household watchlist <span id="watch-count" class="count"></span></h2>
+                <ul id="watchlist" class="watchlist"></ul>
+                <form id="watch-form" class="watch-form" autocomplete="off">
+                    <input id="watch-input" maxlength="80" placeholder="Add something you own" aria-label="Add to watchlist">
+                    <button type="submit" aria-label="Add">+</button>
+                </form>
+            </section>
+            <section class="panel transcript-panel">
+                <h2>Transcript</h2>
+                <ol id="transcript" class="transcript"></ol>
+            </section>
+        </aside>
+    </main>
+
+    <footer class="dock">
+        <div id="suggestions" class="suggestions"></div>
+        <form id="ask-form" class="askbar" autocomplete="off">
+            <button id="mic" class="mic" type="button" aria-label="Hold to talk">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/></svg>
+            </button>
+            <input id="q" maxlength="300" placeholder="Hold the mic and speak, or type a question" aria-label="Question">
+            <button class="send" type="submit">Ask</button>
+        </form>
+        <p id="status" class="status">Ready</p>
+    </footer>
+    <div class="lightbar" aria-hidden="true"></div>
+</div>
+<script src="app.js" type="module"></script>
+</body>
+</html>

@@ -1,4 +1,5 @@
 # One-command judge path: docker build -t recall-radar-mcp . && docker run --rm -p 3000:3000 recall-radar-mcp
+# Then open http://localhost:3000/ (scripted mode). With a model: docker run --rm -p 3000:3000 -e OPENAI_API_KEY recall-radar-mcp
 FROM node:22-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json tsconfig.json ./
@@ -16,6 +17,7 @@ WORKDIR /app
 ENV NODE_ENV=production HOST=0.0.0.0 PORT=3000 WATCHLIST_PATH=/data/watchlist.json
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
+COPY web ./web
 COPY package.json ./
 RUN mkdir -p /data && chown node:node /data
 USER node
