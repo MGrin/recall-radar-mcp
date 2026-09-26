@@ -1,0 +1,67 @@
+{
+ "meta": {
+  "disclaimer": "Do not rely on openFDA to make decisions regarding medical care. While we make every effort to ensure that data is accurate, you should assume all results are unvalidated. We may limit or otherwise restrict your access to the API in line with our Terms of Service.",
+  "terms": "https://open.fda.gov/terms/",
+  "license": "https://open.fda.gov/license/",
+  "last_updated": "2026-09-16",
+  "results": {
+   "skip": 0,
+   "limit": 2,
+   "total": 12
+  }
+ },
+ "results": [
+  {
+   "status": "Ongoing",
+   "city": "Deerfield",
+   "state": "IL",
+   "country": "United States",
+   "classification": "Class II",
+   "openfda": {},
+   "product_type": "Devices",
+   "event_id": "94825",
+   "recalling_firm": "Baxter Healthcare Corporation",
+   "address_1": "1 Baxter Pkwy",
+   "address_2": "N/A",
+   "postal_code": "60015-4625",
+   "voluntary_mandated": "Voluntary: Firm initiated",
+   "initial_firm_notification": "Letter",
+   "distribution_pattern": "Distributed to United States, Canada, Australia, Malaysia, New Zealand, Philippines, Austria, Belgium, France, Germany, Italy, Netherlands, Norway, Spain, Sweden, and United Kingdom.  UPDATED PER EMAIL DATED 7/24/2024:  United States (including Puerto Rico and Guam), Canada, Australia, Brunei, Hong Kong, India, Korea, Malaysia, Maldives, Myanmar, New Zealand, Philippines, Singapore, Taiwan, Thailand, Vietnam, Afghanistan, Austria, Bahrain, Belgium, Croatia, Cyprus, Czech Republic, Denmark, Estonia, Finland, France, Germany, Greece, Hungary, Iceland, Iraq, Ireland, Israel, Italy, Jordan, Kuwait, Luxemburg, Namibia, Netherlands, Norway, Oman, Poland, Portugal, Qatar, Saudi Arabia, Slovenia, South Africa, Spain, Sweden, Switzerland, Turkey, United Arab Emirates, United Kingdom, Yemen, Bahamas, Bolivia, Chile, Colombia, Ecuador, Guatemala, Mexico, and Panama.",
+   "recall_number": "Z-2339-2024",
+   "product_description": "Braun Thermoscan¿ PRO 6000 Ear Thermometer",
+   "product_quantity": "265,647 units",
+   "reason_for_recall": "The Braun Thermoscan PRO 6000 ear thermometers may have been shipped with a compact disc (CD) containing an outdated version of the Instructions for Use (IFU).",
+   "recall_initiation_date": "20240613",
+   "center_classification_date": "20240711",
+   "report_date": "20240717",
+   "code_info": "UDI: 00732094309003 (product code 06000-200) and 00732094309027 (product code 06000-300); All serial numbers."
+  },
+  {
+   "status": "Terminated",
+   "city": "Hauppauge",
+   "state": "NY",
+   "country": "United States",
+   "classification": "Class I",
+   "openfda": {},
+   "product_type": "Devices",
+   "event_id": "92275",
+   "recalling_firm": "BearCare, Inc.",
+   "address_1": "80 Davids Dr Ste 200",
+   "address_2": "",
+   "postal_code": "11788-2002",
+   "voluntary_mandated": "Voluntary: Firm initiated",
+   "initial_firm_notification": "Letter",
+   "distribution_pattern": "US Nationwide distribution.",
+   "recall_number": "Z-1633-2023",
+   "product_description": "Walnut Wearable Smart Thermometer, intended for continuous chest temperature monitoring of children ages 0-6 years in non-emergency medical situations, Model Number WT20",
+   "product_quantity": "1818 units",
+   "reason_for_recall": "There have been reports of skin burns to children wearing the device.",
+   "recall_initiation_date": "20230510",
+   "center_classification_date": "20230608",
+   "termination_date": "20240807",
+   "report_date": "20230614",
+   "code_info": "Lot Number 20221115W002",
+   "more_code_info": ""
+  }
+ ]
+}
