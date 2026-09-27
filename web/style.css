@@ -275,13 +275,13 @@ body[data-state="speaking"] .lightbar { opacity: 1; transform: scaleX(1); animat
 /* ---- responsive: tablets stack the side panels, phones go full-bleed ---- */
 @media (max-width: 980px) {
     .device { width: 100vw; height: auto; min-height: 100vh; border-radius: 0; border: 0; overflow: visible; grid-template-rows: auto auto auto; }
-    body { place-items: stretch; }
-    .stage { grid-template-columns: 1fr; grid-template-rows: auto auto; }
+    body { height: auto; min-height: 100vh; place-items: stretch; }
+    .stage { grid-template-columns: 1fr; grid-template-rows: auto auto; min-height: auto; }
     .answer, .side, .panel { min-height: auto; }
     .answer { overflow: visible; }
     .side { grid-template-columns: 1fr 1fr; grid-template-rows: auto; }
     .transcript { max-height: 260px; }
-    .dock { position: sticky; bottom: 0; background: linear-gradient(180deg, transparent, var(--screen) 22%); padding-top: 18px; }
+    .dock { background: linear-gradient(180deg, transparent, var(--screen) 22%); padding-top: 18px; }
     .radar { width: 180px; }
 }
 @media (max-width: 640px) {

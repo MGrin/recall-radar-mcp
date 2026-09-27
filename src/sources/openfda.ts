@@ -46,12 +46,17 @@ export function normaliseOpenFda(category: FdaCategory, row: Record<string, unkn
     const date = isoOf(str(row.report_date));
     const shortName = desc.length > 90 ? `${desc.slice(0, 89).trimEnd()}…` : desc;
     const recallNumber = str(row.recall_number);
+    const safetyNote = category === 'drug'
+        ? 'Do not stop or change a medicine on your own; ask a pharmacist or doctor.'
+        : category === 'device'
+            ? 'For medical devices, ask your health care provider before changing use.'
+            : 'If in doubt, stop using it.';
     return {
         source: `openfda-${category}` as SourceId,
         id: recallNumber,
         title: shortName || `${category} recall by ${firm}`,
         hazard: reason,
-        remedy: `${cls ? `${cls} recall, status ${status.toLowerCase() || 'unknown'}. ` : ''}Check the lot or code on your package (${firstSentence(str(row.code_info) || 'see the recall notice', 120)}) and follow ${firm || 'the recalling firm'}'s instructions; if in doubt, stop using it.`,
+        remedy: `${cls ? `${cls} recall, status ${status.toLowerCase() || 'unknown'}. ` : ''}Check the lot or code on your package (${firstSentence(str(row.code_info) || 'see the recall notice', 120)}) and follow ${firm || 'the recalling firm'}'s instructions. ${safetyNote}`,
         date,
         products: desc ? [desc] : [],
         url: recallNumber ? recordUrl(category, recallNumber) : `${OPENFDA_BASE}/${category}/enforcement.json`,

@@ -82,3 +82,19 @@ happened and what we did; nothing here is guessed.
 15. **Headless Chromium cannot exercise speech.** `webkitSpeechRecognition` exists in the headless shell
     (the mic button stayed enabled) but there is no microphone and no voices, so push-to-talk and
     `speechSynthesis` were checked by code review only; screenshots were driven with `?q=` and the text box.
+
+## 2026-09-27 — judge preparation, submission-ready entries
+
+These entries describe developer-tool friction with the fields requested by the hackathon. They are
+reproducible observations, not claims that the SDK or public APIs are defective.
+
+| Task and steps | Expected / actual | Severity | Workaround | Actionable suggestion |
+|---|---|---|---|---|
+| Assert MCP `2025-11-25` negotiation: connect `Client` through `StreamableHTTPClientTransport` and inspect its public getters. | Expected a negotiated-version getter; actual public client getters exposed server version and capabilities but not the agreed protocol version. | Low — test observability. | Send a raw `initialize` POST and assert `result.protocolVersion`. | Expose the negotiated protocol version read-only on `Client`, or document the intended assertion path. |
+| Read a stateless `initialize` with plain `fetch`: send `Accept: application/json, text/event-stream` and call `.json()`. | Expected a JSON body; actual response was an SSE `event: message` with a `data:` JSON-RPC line (valid protocol behavior). | Low — onboarding surprise. | Parse SSE in the test, or enable JSON response mode. | Include a stateless `node:http` example showing the response format and both client `Accept` variants. |
+| Search openFDA for a phrase with no matching food record. | Expected HTTP 200 with `results: []`; actual response was HTTP 404 with `NOT_FOUND` and “No matches found!” | Medium — an unhandled response would mark an empty search as source failure. | Treat this specific 404 as an empty list while preserving other HTTP errors. | Document the no-results status beside the enforcement search example. |
+
+During the same preparation pass, our own app had a generic stop-using phrase on FDA drug and
+medical-device cards, and at 800×519 the responsive footer covered a watchlist remove button.
+Both were repaired and exercised; they are product defects, not SDK/API friction, and are recorded in
+[EVIDENCE.md](EVIDENCE.md) rather than offered as bonus friction entries.

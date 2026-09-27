@@ -14,6 +14,10 @@ Every answer carries a short `spoken` sentence for the voice reply, plus structu
 Built for the Amazon Developer Hackathon, Alexa+ track. MCP spec **2025-11-25**, **Streamable HTTP**,
 stateless, `@modelcontextprotocol/sdk` 1.30.1.
 
+This is a **simulated** smart-display experience backed by a real MCP server; it has not been connected
+to an Alexa+ device. See the [judge-run guide](JUDGE_GUIDE.md), [Devpost draft and video plan](SUBMISSION_DRAFT.md),
+and [verification record](EVIDENCE.md).
+
 > **Not medical or safety advice.** Recall and shortage data can be incomplete or late. Always check
 > the linked notice, and ask a pharmacist, doctor or the manufacturer before acting. Never stop a
 > prescribed medicine on your own.
@@ -35,8 +39,9 @@ npm ci && npm start
    no LLM*: a fixed phrase-to-tool mapping stands in for the model, but the MCP calls and the recall data
    are real and live. Try the suggestion chips, or drive it from the URL:
    `http://127.0.0.1:3000/?q=Watch%20my%20crib%20mattress&q=Has%20anything%20in%20my%20house%20been%20recalled%3F`
-2. **With a model.** `OPENAI_API_KEY=sk-... npm start`. The badge reads *OpenAI · gpt-6-luna* and any
-   phrasing works.
+2. **With a model, after a valid key is available.** Set `OPENAI_API_KEY` outside the repository and run
+   `npm start`. The badge identifies the selected model (`gpt-6-luna` by default). The OpenAI adapter
+   has fixture tests but no successful live call yet; free-form phrasing remains to be verified.
 
 Or Docker:
 
@@ -71,10 +76,10 @@ The track allows *"a simulated Alexa+ experience in a web app"*; this is ours, n
 using no third-party marks.
 
 - **Push to talk**: hold the mic button (or the space bar) and speak; it uses the browser's Web Speech
-  API (`SpeechRecognition`, Chrome, Edge and Safari). Where that is missing the mic is disabled and the
-  text box does the same job.
+  API (`SpeechRecognition`). Where that is missing the mic is disabled and the text box does the same job.
+  Microphone behavior still needs a real-device check.
 - **Spoken reply** through `speechSynthesis`, with a mute toggle; a light bar along the bottom edge shows
-  listening, thinking and speaking.
+  listening, thinking and speaking. Speaker output still needs a real-device check.
 - **Tool trace**: a chip for every MCP tool the agent called, with its argument and latency, so a viewer
   can see the answer came from the MCP server.
 - **Recall cards**: source, date, title, hazard, remedy, the watchlist item it matched, and a link to the
