@@ -44,6 +44,14 @@ describe('openFDA', () => {
         expect(rs[0]).toMatchObject({ source: 'openfda-drug', date: '2026-09-02' });
         expect(rs[0].url).toContain('recall_number');
         expect(rs[0].hazard).toMatch(/Cross Contamination/);
+        expect(rs[0].remedy).toMatch(/Do not stop or change a medicine on your own; ask a pharmacist or doctor/);
+        expect(rs[0].remedy).not.toMatch(/if in doubt, stop using it/i);
+    });
+    it('does not tell someone to stop using a recalled medical device by default', async () => {
+        const rs = await searchOpenFda(fixtureFetch().impl, 'device', { terms: ['thermometer'], since: '2025-01-01', limit: 3 });
+        expect(rs[0].source).toBe('openfda-device');
+        expect(rs[0].remedy).toMatch(/ask your health care provider/);
+        expect(rs[0].remedy).not.toMatch(/if in doubt, stop using it/i);
     });
     it('reads openFDA 404 "No matches found" as an empty result', async () => {
         expect(await searchOpenFda(fixtureFetch({ empty: true }).impl, 'food', { terms: ['zz'], since: '2026-01-01', limit: 3 })).toEqual([]);
