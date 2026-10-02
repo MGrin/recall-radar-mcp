@@ -96,7 +96,7 @@ describe('OpenAI adapter in the agent loop, real MCP server (fixtures upstream)'
 
         // Every MCP tool was offered, in OpenAI function format.
         expect(f.requests[0].body.tools.map((t: any) => t.function.name).sort()).toEqual([
-            'check_my_household', 'search_food_recalls', 'search_medicine_alerts', 'search_product_recalls',
+            'check_my_household', 'search_eu_product_recalls', 'search_food_recalls', 'search_medicine_alerts', 'search_product_recalls',
             'watchlist_add', 'watchlist_list', 'watchlist_remove',
         ]);
         // Step 2 saw the assistant tool_calls message and the tool result, linked by id.

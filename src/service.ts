@@ -3,6 +3,7 @@ import { isoDaysAgo, UpstreamError } from './http-util.js';
 import { searchCpsc } from './sources/cpsc.js';
 import { fetchEmaShortages, matchesMedicine } from './sources/ema.js';
 import { searchOpenFda, type FdaCategory } from './sources/openfda.js';
+import { getSafetyGateXml, matchesEuQuery, parseReport, parseReportList, reportUrl, selectReports, SG_LIST_URL, type ReportRef } from './sources/safetygate.js';
 import type { FetchLike, Recall } from './types.js';
 import type { WatchItem } from './watchlist.js';
 
@@ -13,11 +14,19 @@ export interface SearchResult {
 }
 
 export const EMA_CACHE_MS = 60 * 60 * 1000;
+/** The Safety Gate index changes weekly; a published weekly report does not change at all. */
+export const SG_LIST_CACHE_MS = 60 * 60 * 1000;
+const SG_REPORT_CACHE_SIZE = 52;
+/** Weekly reports read at once: a report took 3-6 seconds to serve, and this is not our server. */
+const SG_CONCURRENCY = 4;
 
 const byDateDesc = (a: Recall, b: Recall) => b.date.localeCompare(a.date);
 
 export class RecallService {
     private emaCache: { at: number; rows: Recall[] } | null = null;
+    private sgList: { at: number; rows: ReportRef[] } | null = null;
+    private readonly sgReports = new Map<string, Recall[]>();
+    private readonly sgSlot = limiter(SG_CONCURRENCY);
     constructor(private readonly fetchImpl: FetchLike, private readonly now: () => Date = () => new Date()) {}
 
     today(): string {
@@ -37,6 +46,46 @@ export class RecallService {
         const rows = await fetchEmaShortages(this.fetchImpl);
         this.emaCache = { at: t, rows };
         return rows;
+    }
+
+    async safetyGateList(): Promise<ReportRef[]> {
+        const t = this.now().getTime();
+        if (this.sgList && t - this.sgList.at < SG_LIST_CACHE_MS) return this.sgList.rows;
+        const rows = parseReportList(await getSafetyGateXml(this.fetchImpl, SG_LIST_URL));
+        this.sgList = { at: t, rows };
+        return rows;
+    }
+
+    async safetyGateReport(ref: ReportRef): Promise<Recall[]> {
+        const hit = this.sgReports.get(ref.id);
+        if (hit) return hit;
+        const rows = await this.sgSlot(async () => parseReport(await getSafetyGateXml(this.fetchImpl, reportUrl(ref.id))));
+        if (this.sgReports.size >= SG_REPORT_CACHE_SIZE) this.sgReports.delete(this.sgReports.keys().next().value!);
+        this.sgReports.set(ref.id, rows);
+        return rows;
+    }
+
+    /**
+     * EU product recalls from Safety Gate's weekly reports published since a date. One
+     * warning per weekly report that failed; when the window holds more than MAX_REPORTS
+     * reports, `since` comes back as the oldest report actually read.
+     */
+    async euProducts(q: { query: string; since: string; limit: number }): Promise<SearchResult & { since: string }> {
+        let list: ReportRef[];
+        try {
+            list = await this.safetyGateList();
+        } catch (err) {
+            throw new UpstreamError(`Every source failed. EU Safety Gate unavailable: ${err instanceof Error ? err.message : String(err)}`, 'all');
+        }
+        const { reports, truncated } = selectReports(list, q.since, this.today());
+        const since = truncated ? reports[reports.length - 1].date : q.since;
+        if (!reports.length) return { results: [], warnings: [], since };
+        const jobs = Object.fromEntries(reports.map((ref) => [
+            `EU Safety Gate ${ref.reference}`,
+            async () => (await this.safetyGateReport(ref)).filter((r) => matchesEuQuery(r, q.query)),
+        ]));
+        const r = await this.gather(jobs);
+        return { ...r, results: r.results.slice(0, q.limit), since };
     }
 
     /** Run named lookups in parallel; keep what succeeded, turn failures into warnings. */
@@ -114,6 +163,22 @@ export class RecallService {
         const matches = r.results.map((rec) => ({ ...rec, matchedItems: matchedItems(rec, items) }));
         return { ...r, matches };
     }
+}
+
+/** At most `n` of the wrapped calls in flight at once. */
+function limiter(n: number) {
+    let active = 0;
+    const waiting: Array<() => void> = [];
+    return async <T>(fn: () => Promise<T>): Promise<T> => {
+        while (active >= n) await new Promise<void>((r) => waiting.push(r));
+        active++;
+        try {
+            return await fn();
+        } finally {
+            active--;
+            waiting.shift()?.();
+        }
+    };
 }
 
 function dedupe(rows: Recall[]): Recall[] {

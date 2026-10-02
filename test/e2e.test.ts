@@ -67,10 +67,10 @@ describe('HTTP server (fixtures)', () => {
         expect(bad.status).toBe(403);
     });
 
-    it('lists the seven tools, each with an input and output schema', async () => {
+    it('lists the eight tools, each with an input and output schema', async () => {
         const { tools } = await client.listTools();
         expect(tools.map((t) => t.name).sort()).toEqual([
-            'check_my_household', 'search_food_recalls', 'search_medicine_alerts', 'search_product_recalls',
+            'check_my_household', 'search_eu_product_recalls', 'search_food_recalls', 'search_medicine_alerts', 'search_product_recalls',
             'watchlist_add', 'watchlist_list', 'watchlist_remove',
         ]);
         for (const t of tools) {
@@ -111,6 +111,19 @@ describe('HTTP server (fixtures)', () => {
         expect(eu.spoken).toMatch(/Ozempic/);
     });
 
+    it('search_eu_product_recalls answers from EU Safety Gate with the required attribution', async () => {
+        const r = await client.callTool({ name: 'search_eu_product_recalls', arguments: { query: 'usb charger', limit: 3 } });
+        expect(r.isError).toBeFalsy();
+        const s = r.structuredContent as Structured;
+        // Default window: 28 days before the test clock (2026-09-26).
+        expect(s.since).toBe('2026-08-29');
+        expect(s.results.map((x: Structured) => [x.source, x.id])).toEqual([['eu-safety-gate', 'SR/02540/26']]);
+        expect(s.spoken).toMatch(/^I found 1 EU product recall for "usb charger" since 2026-08-29\. The most recent: In the EU, Safety Gate flagged/);
+        expect(s.attribution).toMatch(/^Alerts from the Rapid Alert System for dangerous non-food products/);
+        expect((r.content as Array<{ text: string }>)[0].text).toContain(s.attribution);
+        expect(calls.some((c) => c.includes('saferproducts.gov') && c.includes('usb'))).toBe(false);
+    });
+
     it('watchlist add / list / remove and check_my_household', async () => {
         const empty = (await client.callTool({ name: 'check_my_household', arguments: {} })).structuredContent as Structured;
         expect(empty.spoken).toMatch(/watchlist is empty/);
@@ -136,6 +149,8 @@ describe('HTTP server (fixtures)', () => {
         // One openFDA request per category, not per item.
         const foodQs = calls.filter((c) => c.includes('/food/enforcement.json')).map((c) => new URL(c).searchParams.get('search'));
         expect(foodQs).toContain('report_date:[20260101 TO 20260926] AND (product_description:"peanut butter")');
+        // The household check reads the US sources and EMA only; Safety Gate is its own tool.
+        expect(h.matches.some((m: Structured) => m.source === 'eu-safety-gate')).toBe(false);
 
         s = (await client.callTool({ name: 'watchlist_remove', arguments: { name: 'OZEMPIC' } })).structuredContent as Structured;
         expect(s).toMatchObject({ removed: true });
