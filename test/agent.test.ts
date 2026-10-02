@@ -50,6 +50,22 @@ describe('provider selection', () => {
         expect(adapterFromEnv({ MODEL_PROVIDER: 'scripted', OPENAI_API_KEY: 'k' }).id).toBe('scripted');
         expect(() => adapterFromEnv({ MODEL_PROVIDER: 'openai' })).toThrow(/needs OPENAI_API_KEY/);
     });
+
+    it('sends reasoning_effort "none" to OpenAI by default, and never to Ollama', async () => {
+        const sent = async (env: NodeJS.ProcessEnv) => {
+            let body: any;
+            const impl = async (_u: unknown, init?: { body?: unknown }) => {
+                body = JSON.parse(String(init?.body));
+                return new Response(JSON.stringify({ choices: [{ message: { content: 'ok' } }] }), { status: 200 });
+            };
+            await adapterFromEnv(env, impl as never).next({ system: 's', messages: [], tools: [] });
+            return body.reasoning_effort;
+        };
+        expect(await sent({ OPENAI_API_KEY: 'k' })).toBe('none');
+        expect(await sent({ OPENAI_API_KEY: 'k', OPENAI_REASONING_EFFORT: 'low' })).toBe('low');
+        expect(await sent({ OPENAI_API_KEY: 'k', OPENAI_REASONING_EFFORT: 'omit' })).toBeUndefined();
+        expect(await sent({ MODEL_PROVIDER: 'ollama' })).toBeUndefined();
+    });
 });
 
 describe('agent loop, scripted adapter, real MCP server over HTTP (fixtures upstream)', () => {

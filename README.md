@@ -59,6 +59,7 @@ docker run --rm -p 3000:3000 -e OPENAI_API_KEY recall-radar-mcp   # with a model
 | `MODEL_PROVIDER` | `openai` if `OPENAI_API_KEY` is set, else `scripted` | `openai`, `ollama` or `scripted` |
 | `OPENAI_API_KEY` | *(none)* | OpenAI key; never logged or sent to the browser |
 | `OPENAI_MODEL` | `gpt-6-luna` | any Chat Completions model with function calling |
+| `OPENAI_REASONING_EFFORT` | `none` | sent as `reasoning_effort`; GPT-6 models refuse function tools on Chat Completions without `none`. Set `omit` for a model that rejects the field |
 | `OPENAI_BASE_URL` | `https://api.openai.com/v1` | for an OpenAI-compatible gateway |
 | `OLLAMA_URL` / `OLLAMA_MODEL` | `http://127.0.0.1:11434` / `llama3.1` | Ollama's OpenAI-compatible endpoint (`/v1/chat/completions`) |
 | `MCP_URL` | this process's own `/mcp` | point the agent at another Recall Radar MCP server |

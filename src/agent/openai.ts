@@ -15,6 +15,8 @@ interface Options {
     model: string;
     apiKey?: string;
     label?: string;
+    /** Sent as `reasoning_effort` when set. OpenAI's GPT-6 models refuse function tools on Chat Completions without `none`. */
+    reasoningEffort?: string;
     fetchImpl?: FetchLike;
 }
 
@@ -38,6 +40,7 @@ export class OpenAICompatAdapter implements ModelAdapter {
     readonly model: string;
     private readonly baseUrl: string;
     private readonly apiKey?: string;
+    private readonly reasoningEffort?: string;
     private readonly fetchImpl: FetchLike;
 
     constructor(o: Options) {
@@ -45,6 +48,7 @@ export class OpenAICompatAdapter implements ModelAdapter {
         this.model = o.model;
         this.baseUrl = o.baseUrl.replace(/\/+$/, '');
         this.apiKey = o.apiKey;
+        this.reasoningEffort = o.reasoningEffort;
         this.label = o.label ?? `${o.id === 'openai' ? 'OpenAI' : 'Ollama'} · ${o.model}`;
         this.fetchImpl = o.fetchImpl ?? ((u, i) => fetch(u, i));
     }
@@ -55,6 +59,7 @@ export class OpenAICompatAdapter implements ModelAdapter {
             messages: [{ role: 'system', content: req.system }, ...req.messages],
             tools: req.tools.map((t) => ({ type: 'function', function: { name: t.name, description: t.description, parameters: cleanSchema(t.parameters) } })),
             tool_choice: 'auto',
+            ...(this.reasoningEffort ? { reasoning_effort: this.reasoningEffort } : {}),
         };
         const headers: Record<string, string> = { 'Content-Type': 'application/json' };
         if (this.apiKey) headers.Authorization = `Bearer ${this.apiKey}`;

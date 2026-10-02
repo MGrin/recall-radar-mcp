@@ -37,8 +37,23 @@ export function normaliseCpsc(row: Record<string, unknown>): Recall {
     };
 }
 
+/** Every word of the query must appear in the title, a product name or the description. */
+function matchesLocally(row: Record<string, unknown>, productName: string): boolean {
+    const hay = [str(row.Title), str(row.Description), ...names(row.Products)].join(' ').toLowerCase();
+    return productName.toLowerCase().split(/\s+/).filter(Boolean).every((w) => hay.includes(w));
+}
+
 export async function searchCpsc(fetchImpl: FetchLike, q: { productName?: string; since: string }): Promise<Recall[]> {
-    const body = await getJson(fetchImpl, cpscUrl(q), 'CPSC');
+    let body: unknown;
+    try {
+        body = await getJson(fetchImpl, cpscUrl(q), 'CPSC');
+    } catch (err) {
+        // CPSC's ProductName filter has answered 503 "Under Construction" while the date-only listing
+        // still worked (2026-10-02). Fetch by date and filter here rather than lose the source.
+        if (!q.productName || !(err instanceof UpstreamError)) throw err;
+        const all = await getJson(fetchImpl, cpscUrl({ since: q.since }), 'CPSC');
+        body = Array.isArray(all) ? all.filter((r) => matchesLocally(r as Record<string, unknown>, q.productName!)) : all;
+    }
     if (!Array.isArray(body)) throw new UpstreamError('CPSC answered with something other than a list of recalls', 'CPSC');
     return body.map((r) => normaliseCpsc(r as Record<string, unknown>)).filter((r) => r.id);
 }

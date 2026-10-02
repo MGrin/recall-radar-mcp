@@ -18,6 +18,8 @@ export function adapterFromEnv(env: NodeJS.ProcessEnv = process.env, fetchImpl?:
                 baseUrl: env.OPENAI_BASE_URL?.trim() || OPENAI_BASE_URL,
                 model: env.OPENAI_MODEL?.trim() || OPENAI_DEFAULT_MODEL,
                 apiKey: key,
+                // 'none' by default: GPT-6 models answer HTTP 400 to function tools otherwise. 'omit' leaves the field out.
+                reasoningEffort: ((e) => (e === 'omit' ? undefined : e || 'none'))(env.OPENAI_REASONING_EFFORT?.trim()),
                 fetchImpl,
             });
         case 'ollama':
