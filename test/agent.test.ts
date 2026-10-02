@@ -99,7 +99,7 @@ describe('agent loop, scripted adapter, real MCP server over HTTP (fixtures upst
         const h = await ask({ adapter, mcpUrl, utterance: 'Has anything in my house been recalled?', now: NOW });
         expect(h.trace).toMatchObject([{ tool: 'check_my_household', ok: true }]);
         expect(h.reply.length).toBeGreaterThan(20);
-        expect(h.reply).toMatch(/alerts since 2026-06-28, about crib mattress, peanut butter/);
+        expect(h.reply).toMatch(/alerts since 2026-03-30, about crib mattress, peanut butter/);
         expect(h.recalls.find((m) => m.source === 'cpsc')?.matchedItems).toEqual(['crib mattress']);
         expect(h.recalls.find((m) => m.source === 'openfda-food')?.matchedItems).toEqual(['peanut butter']);
 

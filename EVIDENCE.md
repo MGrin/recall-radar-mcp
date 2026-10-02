@@ -48,5 +48,12 @@ Supersedes the two 2026-09-27 limits about the OpenAI key and the missing video.
 - The capture uses `?tall=1` (added for this) so a card's remedy and link fit in the frame; the default layout is unchanged.
 - Other OpenAI models were not exercised. A model that rejects `reasoning_effort` needs `OPENAI_REASONING_EFFORT=omit`; that path has a unit test, not a live run.
 - Ollama is still untested. Docker was not rebuilt after these changes; the Dockerfile did not change.
-- Live recall results change. The crib-mattress match depends on the default 90-day window, which stops covering 2026-08-06 after **2026-11-04**; judging runs 2026-11-09 to 2026-11-20. A judge asking then needs a longer window ("since July") or will see no match.
+- Live recall results change. The household check's default window was 90 days on 2026-10-02, which would have dropped the 2026-08-06 crib-mattress match on 2026-11-04, before judging (2026-11-09 to 2026-11-20). It is now **180 days** (in range until 2027-02-02), with a test pinning both the default and the judging-period bound. The video was rendered under the 90-day default: its on-screen reply reads "since July 4, 2026". No spoken or captioned line names the window, so it was not re-rendered.
 - No Alexa+ device integration, public repository, reviewer invitation, video upload, Devpost registration or submission has happened.
+
+## Addendum — 2026-10-02, later the same day (window widened, CPSC outage re-read)
+
+- `check_my_household` now defaults to 180 days (`HOUSEHOLD_DEFAULT_DAYS`). `npm test`: 50 passed, 3 opt-in live tests skipped. A scripted-mode live call with no arguments reported `since: 2026-04-05`, so the new default is in effect.
+- **The crib-mattress match was NOT re-verified live under the new default.** That call answered "none … matched … Some sources were unavailable", because CPSC answered HTTP 503 for the new window's URL.
+- **Correction to the table above.** The CPSC outage is not limited to the `ProductName` filter. On 2026-10-02 the API answered 503 or 200 consistently per URL: `RecallDateStart=2026-07-04` and `2026-09-01` answered 200, `2026-07-05` and `2026-04-05` answered 503 on every one of 6–8 tries, with or without `ProductName`. That pattern fits an origin that is down with a few cached responses still served; the cause was not established. The fallback found the recall earlier only because its date-only URL was one that answered.
+- Consequence: while that outage lasts, product recalls can be missing from any answer; the reply says a source was unavailable. The fallback stays (it costs one extra request and helps when only the filtered query fails). Re-run the household check live once CPSC answers again.

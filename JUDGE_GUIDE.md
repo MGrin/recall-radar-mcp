@@ -16,7 +16,7 @@ Open <http://127.0.0.1:3000/>. The badge must read **Scripted mode, no LLM**. Fo
 ### Two-minute walkthrough
 
 1. Click **Watch my crib mattress**. The right panel should show the item and the trace should show `watchlist_add`.
-2. Click **Has anything in my house been recalled?** The trace should show `check_my_household`; any matching cards show a date, official source link, hazard and remedy. On 2026-09-27, this found the 2026-08-06 CPSC Voomf crib-mattress recall. Live results and the default 90-day window change with time.
+2. Click **Has anything in my house been recalled?** The trace should show `check_my_household`; any matching cards show a date, official source link, hazard and remedy. On 2026-09-27, this found the 2026-08-06 CPSC Voomf crib-mattress recall. Live results change with time; the default window is the last 180 days.
 3. Click **Is there a recall on peanut butter?** to see FDA food records, or **Is ibuprofen recalled or short?** for FDA drug recalls and EMA shortages. FDA record links open the exact openFDA API record.
 4. Click **What am I watching?**, then remove the item with ×. The transcript and MCP trace show the path taken.
 
@@ -54,7 +54,7 @@ The UI is at `http://127.0.0.1:3000/`, MCP at `/mcp`, and health at `/healthz`. 
 
 ## Interpretation and limits
 
-- The crib-mattress example matches a CPSC recall dated 2026-08-06. The default window is 90 days, so after 2026-11-04 ask with a longer window (in model mode: "since July"; by CLI: `npm run call -- check_my_household '{"since":"2026-07-01"}'`).
+- The crib-mattress example matches a CPSC recall dated 2026-08-06. The household check looks back 180 days by default, so that match stays in range until 2027-02-02, past the judging period.
 - A watchlist check is **on demand**. This version does not schedule alerts or know what is actually in a household until someone adds an item.
 - Results may be incomplete or delayed. The UI shows source warnings where one upstream fails. Confirm the product and lot against the linked notice; ask a pharmacist or doctor before changing medicine use.
 - The browser has push-to-talk and spoken-reply code, with typed input as fallback. Microphone permission, speech recognition and speaker output have **not** been tested on a real device; the demo video enters its questions from the page address and says so. The OpenAI adapter was run live with `gpt-6-luna` on 2026-10-02.

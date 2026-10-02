@@ -15,6 +15,9 @@ export interface Deps {
     watchlist: Watchlist;
 }
 
+/** Default look-back of check_my_household. Half a year: a recall stays findable long after the week it was news. */
+export const HOUSEHOLD_DEFAULT_DAYS = 180;
+
 export function makeDeps(opts: { fetchImpl?: FetchLike; watchlistPath: string; now?: () => Date }): Deps {
     return {
         service: new RecallService(opts.fetchImpl ?? ((u, i) => fetch(u, i)), opts.now),
@@ -221,9 +224,9 @@ export function createServer(deps: Deps): McpServer {
             title: 'Check my household for recalls',
             description:
                 'Check every item on the household watchlist against recent recalls and medicine shortages from all sources (CPSC, openFDA food/drug/device, EMA). ' +
-                'Use when someone asks "has anything in my house been recalled?". Default window: the last 90 days.',
+                'Use when someone asks "has anything in my house been recalled?". Default window: the last 180 days.',
             inputSchema: {
-                since: isoDate.optional().describe('Only recalls on or after this date (YYYY-MM-DD). Default: 90 days ago.'),
+                since: isoDate.optional().describe('Only recalls on or after this date (YYYY-MM-DD). Default: 180 days ago.'),
                 limit: z.number().int().min(1).max(50).default(10).describe('Maximum matches to return, newest first.'),
             },
             outputSchema: {
@@ -238,7 +241,7 @@ export function createServer(deps: Deps): McpServer {
             annotations: readOnly,
         },
         safe(async ({ since, limit }) => {
-            const from = since ?? service.daysAgo(90);
+            const from = since ?? service.daysAgo(HOUSEHOLD_DEFAULT_DAYS);
             const items = await watchlist.list();
             const watched = items.map((i) => i.name);
             if (!items.length) {

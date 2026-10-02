@@ -6,6 +6,8 @@ import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/
 import { createApp } from '../src/app.js';
 import { makeDeps } from '../src/server.js';
 import { fixtureFetch, NOW, tmpWatchlist } from './helpers.js';
+import { isoDaysAgo } from '../src/http-util.js';
+import { HOUSEHOLD_DEFAULT_DAYS } from '../src/server.js';
 
 type Structured = Record<string, any>;
 
@@ -112,6 +114,10 @@ describe('HTTP server (fixtures)', () => {
     it('watchlist add / list / remove and check_my_household', async () => {
         const empty = (await client.callTool({ name: 'check_my_household', arguments: {} })).structuredContent as Structured;
         expect(empty.spoken).toMatch(/watchlist is empty/);
+        // Default window: 180 days before the test clock (2026-09-26).
+        expect(empty.since).toBe('2026-03-30');
+        // The demo's crib-mattress recall (2026-08-06) must still be inside it on the last judging day.
+        expect(isoDaysAgo(HOUSEHOLD_DEFAULT_DAYS, new Date('2026-11-20T23:59:59Z')) <= '2026-08-06').toBe(true);
 
         let s = (await client.callTool({ name: 'watchlist_add', arguments: { name: 'crib mattress', kind: 'product' } })).structuredContent as Structured;
         expect(s.added).toBe(true);
