@@ -20,7 +20,15 @@ Open <http://127.0.0.1:3000/>. The badge must read **Scripted mode, no LLM**. Fo
 3. Click **Is there a recall on peanut butter?** to see FDA food records, or **Is ibuprofen recalled or short?** for FDA drug recalls and EMA shortages. FDA record links open the exact openFDA API record.
 4. Click **What am I watching?**, then remove the item with ×. The transcript and MCP trace show the path taken.
 
-The same first two actions can be replayed with [this demo URL](http://127.0.0.1:3000/?mute=1&q=Watch%20my%20crib%20mattress&q=Has%20anything%20in%20my%20house%20been%20recalled%3F). `mute=1` avoids automatic browser speech during silent inspection. Scripted mode recognizes only the examples shown in the UI; use model mode for free-form phrasing after its key has been verified.
+The same first two actions can be replayed with [this demo URL](http://127.0.0.1:3000/?mute=1&q=Watch%20my%20crib%20mattress&q=Has%20anything%20in%20my%20house%20been%20recalled%3F). `mute=1` avoids automatic browser speech during silent inspection. Scripted mode recognizes only the examples shown in the UI; use model mode for free-form phrasing.
+
+### With a model (optional)
+
+```sh
+OPENAI_API_KEY=... npm start
+```
+
+The badge then reads **OpenAI · gpt-6-luna** and any phrasing works, for example "Watch my crib mattress and my ibuprofen". This path was run live on 2026-10-02 (see [EVIDENCE.md](EVIDENCE.md)). The adapter sends `reasoning_effort: "none"`, which `gpt-6-luna` requires for function tools on Chat Completions; for a model that rejects that field, set `OPENAI_REASONING_EFFORT=omit`. Other models were not exercised.
 
 ### Inspect the MCP surface
 
@@ -46,7 +54,8 @@ The UI is at `http://127.0.0.1:3000/`, MCP at `/mcp`, and health at `/healthz`. 
 
 ## Interpretation and limits
 
+- The crib-mattress example matches a CPSC recall dated 2026-08-06. The default window is 90 days, so after 2026-11-04 ask with a longer window (in model mode: "since July"; by CLI: `npm run call -- check_my_household '{"since":"2026-07-01"}'`).
 - A watchlist check is **on demand**. This version does not schedule alerts or know what is actually in a household until someone adds an item.
 - Results may be incomplete or delayed. The UI shows source warnings where one upstream fails. Confirm the product and lot against the linked notice; ask a pharmacist or doctor before changing medicine use.
-- The browser has push-to-talk and spoken-reply code, with typed input as fallback. Microphone permission, speech recognition and speaker output still need a real-device check. The OpenAI adapter has fixture coverage but no successful live model call as of 2026-09-27.
+- The browser has push-to-talk and spoken-reply code, with typed input as fallback. Microphone permission, speech recognition and speaker output have **not** been tested on a real device; the demo video enters its questions from the page address and says so. The OpenAI adapter was run live with `gpt-6-luna` on 2026-10-02.
 - The repository is currently private. Review access and public video requirements are listed in [SUBMISSION_DRAFT.md](SUBMISSION_DRAFT.md); access must be arranged before judging.

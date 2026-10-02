@@ -9,6 +9,8 @@ const el = (tag, props = {}, ...kids) => {
 };
 
 const params = new URLSearchParams(location.search);
+// ?tall=1 lets the display use the whole window height, so a capture shows a card's remedy and link.
+if (params.get('tall') === '1') document.documentElement.style.setProperty('--device-max-h', '100vh');
 const state = {
     history: [],
     busy: false,

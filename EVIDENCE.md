@@ -24,3 +24,29 @@ This record concerns the existing Recall Radar app on `origin/main` plus the foc
 - The Docker smoke test preceded the final FDA wording edit; the final source was compiled, tested against fixtures, and exercised through live MCP calls on the host. The Dockerfile itself did not change.
 - The browser's scripted mode maps known phrases to MCP calls. It was never presented as an LLM. Live source results and the default 90-day window can change before judging.
 - No Alexa+ device integration, automatic background alerting, video, public repository, reviewer invitation, Devpost registration or submission is claimed.
+
+---
+
+# Verification record — 2026-10-02 (live model check and demo video)
+
+Supersedes the two 2026-09-27 limits about the OpenAI key and the missing video. Everything else above stands.
+
+| Check | Result |
+|---|---|
+| OpenAI key | `GET /v1/models` returned HTTP 200 with a new key; `gpt-6-luna` (the adapter default) is listed. The key is never printed, logged or committed. |
+| First live call, before the fix | **Failed.** `gpt-6-luna` answered HTTP 400: *"Function tools with reasoning_effort are not supported for gpt-6-luna in /v1/chat/completions … set reasoning_effort to 'none'."* The fixture tests had not caught it. |
+| Fix | The OpenAI adapter now sends `reasoning_effort: "none"` (`OPENAI_REASONING_EFFORT`, `omit` leaves the field out; never sent to Ollama). Unit test added. |
+| Live agent loop, `gpt-6-luna`, after the fix | `POST /api/ask` × 3, all HTTP 200, 2 model steps each, 3–7 s. "Watch my crib mattress and my ibuprofen" produced two `watchlist_add` calls in one turn (product, medicine). "Has anything in my house been recalled?" called `check_my_household` and answered with the 2026-08-06 CPSC Voomf play-yard and crib-mattress recall. "Is there a recall on peanut butter?" called `search_food_recalls` and returned five FDA food records. |
+| CPSC outage found during the check | CPSC's `ProductName` filter answered HTTP 503 ("Under Construction") while the date-only listing answered 200. The model reply said so: *"The CPSC source was unavailable, so this check may be incomplete."* `searchCpsc` now falls back to the date-only listing and filters locally; test added. After the fix the household check found the CPSC recall while the upstream filter was still down. |
+| `npm run build`; `npm test` | Passed; 50 passed, 3 opt-in live tests skipped. |
+| Demo video | `demo/walkthrough.toml`, rendered with the studio media toolkit: 2:09, 1920×1080, H.264 + AAC, with captions. Four distinct questions, each asked once of the live `gpt-6-luna` model against live CPSC, FDA and EMA data at render time. Eleven frames were extracted and read; every spoken fact matched the screen. The file is a draft held outside the repository and is not published. |
+
+## Limits that remain
+
+- **Microphone and speaker were not tested.** The video's questions are entered from the page address (`?q=`), with `mute=1`. Headless Chromium has no microphone or speaker, so push-to-talk, speech recognition and the spoken reply are verified by code reading only. The video says this in its narration.
+- **The video's narrator is a local text-to-speech voice (Kokoro)**, not a person and not the app's own speech output. The narration says it is synthetic.
+- The capture uses `?tall=1` (added for this) so a card's remedy and link fit in the frame; the default layout is unchanged.
+- Other OpenAI models were not exercised. A model that rejects `reasoning_effort` needs `OPENAI_REASONING_EFFORT=omit`; that path has a unit test, not a live run.
+- Ollama is still untested. Docker was not rebuilt after these changes; the Dockerfile did not change.
+- Live recall results change. The crib-mattress match depends on the default 90-day window, which stops covering 2026-08-06 after **2026-11-04**; judging runs 2026-11-09 to 2026-11-20. A judge asking then needs a longer window ("since July") or will see no match.
+- No Alexa+ device integration, public repository, reviewer invitation, video upload, Devpost registration or submission has happened.

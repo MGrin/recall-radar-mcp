@@ -39,9 +39,9 @@ npm ci && npm start
    no LLM*: a fixed phrase-to-tool mapping stands in for the model, but the MCP calls and the recall data
    are real and live. Try the suggestion chips, or drive it from the URL:
    `http://127.0.0.1:3000/?q=Watch%20my%20crib%20mattress&q=Has%20anything%20in%20my%20house%20been%20recalled%3F`
-2. **With a model, after a valid key is available.** Set `OPENAI_API_KEY` outside the repository and run
-   `npm start`. The badge identifies the selected model (`gpt-6-luna` by default). The OpenAI adapter
-   has fixture tests but no successful live call yet; free-form phrasing remains to be verified.
+2. **With a model.** Set `OPENAI_API_KEY` outside the repository and run `npm start`. The badge
+   identifies the selected model (`gpt-6-luna` by default). This path was run live on 2026-10-02
+   with that model; other models were not exercised ([EVIDENCE.md](EVIDENCE.md)).
 
 Or Docker:
 
