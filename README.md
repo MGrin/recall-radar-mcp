@@ -6,6 +6,7 @@ assistant answer household safety questions from **public government recall data
 - US product recalls (CPSC) and home medical-device recalls (FDA),
 - US food recalls (FDA),
 - US medicine recalls (FDA) and EU medicine shortages (European Medicines Agency),
+- EU dangerous-product alerts (EU Safety Gate, formerly RAPEX),
 - and a **household watchlist** the assistant checks proactively: *"has anything I own been recalled since the summer?"*
 
 Every answer carries a short `spoken` sentence for the voice reply, plus structured detail with the
@@ -142,7 +143,8 @@ npm run call -- check_my_household '{}'
 | `watchlist_add` | "Keep an eye on my Graco stroller." (`kind`: product, food, medicine, any) | local file |
 | `watchlist_list` | "What am I watching?" | local file |
 | `watchlist_remove` | "Stop watching the stroller." | local file |
-| `check_my_household` | "Has anything in my house been recalled?" (default: last 180 days) | all of the above, by item kind |
+| `search_eu_product_recalls` | "Was my USB charger recalled in the EU?" By product, brand, model or barcode (default: last 28 days, at most the 12 latest weekly reports) | EU Safety Gate |
+| `check_my_household` | "Has anything in my house been recalled?" (default: last 180 days) | CPSC, openFDA, EMA, by item kind (not Safety Gate) |
 
 Each tool declares a zod input schema and an `outputSchema`; results come back as `structuredContent`
 (validated by the SDK) and as text. Each recall is normalised to:
@@ -153,8 +155,12 @@ Each tool declares a zod input schema and an `outputSchema`; results come back a
 
 If one upstream is down, the others still answer and the result lists a warning; if every source for
 a question is down, the tool returns a clean MCP tool error (`isError: true`). Every upstream request
-has a 10-second timeout. The EMA file is cached for an hour in memory, because EMA rate-limits
-repeated downloads.
+has a 10-second timeout (20 seconds for Safety Gate). The EMA file is cached for an hour in memory,
+because EMA rate-limits repeated downloads. Safety Gate publishes one weekly report every Friday, each
+about 200-300 KB and 3-6 seconds to serve (2026-10-02): a search reads at most 12 reports, four at a
+time, caches the index for an hour and each published report for the life of the process. A cold
+four-week search took about 5 seconds; a repeat answers from the cache. When the window holds more
+than 12 reports, `since` in the answer is the oldest report actually read.
 
 ## Data sources and terms
 
@@ -163,17 +169,22 @@ repeated downloads.
 | US Consumer Product Safety Commission | `saferproducts.gov/RestWebServices/Recall` | US government work, public domain |
 | openFDA enforcement reports (food, drug, device) | `api.fda.gov/{food,drug,device}/enforcement.json` | public domain / CC0 per [open.fda.gov/license](https://open.fda.gov/license/); openFDA's own disclaimer: do not rely on it for medical-care decisions. Keyless use is rate-limited ([terms](https://open.fda.gov/terms/)). |
 | European Medicines Agency, medicine shortages catalogue | `ema.europa.eu/en/documents/report/shortages-output-json-report_en.json` | reuse permitted with EMA acknowledged as the source ([legal notice](https://www.ema.europa.eu/en/about-us/about-website/legal-notice)); every EMA item carries its EMA URL |
+| European Commission, EU Safety Gate weekly reports | `ec.europa.eu/safety-gate-alerts/api/download/weeklyReport/{list,detail}/xml/…` | reuse authorised if the alerts' meaning is not distorted and the source is acknowledged in the Commission's exact words ([disclaimer](https://api.tech.ec.europa.eu/justools-content/buckets/saga/folder/menu/filename/New_disclaimer_EN.pdf), "Reuse of alerts", current revision 2026-06-11). Every answer carries that sentence as `attribution` and in its text; every item links its official alert |
 
 openFDA has no per-recall web page, so an FDA item's `url` is the openFDA API query that returns exactly
 that recall (`search=recall_number:"…"`).
 
-TODO: EU Safety Gate (non-food consumer products) is not included yet; its download endpoint was not
-reachable from the development machine.
+The Safety Gate attribution, verbatim: *"Alerts from the Rapid Alert System for dangerous non-food
+products, published free of charge on the Safety Gate website (https://ec.europa.eu/safety-gate-alerts)
+© European Union, 2005 – 2026"*. The Commission also notes that brands in the alerts may have been used
+by the economic operators without the owner's permission.
 
 ### Pre-existing code adapted
 
 `src/sources/ema.ts` adapts our own earlier code from the `ema-medicines-watch` Apify Actor (same
 author): the EMA dd/mm/yyyy date parser, the `{meta, data[]}` shape check and the truncated-file guard.
+`src/sources/safetygate.ts` adapts the `eu-recall-watchlist` Apify Actor (same author): the Safety Gate
+XML parser settings, CDATA handling, the run-together `measures` field and the verbatim attribution.
 Everything else was written for this entry.
 
 ## Development

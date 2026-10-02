@@ -2,17 +2,17 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.MGrin/household-recall-watch",
   "title": "Household Recall Watch",
-  "description": "Household recall checks over public CPSC, openFDA and EMA data, with a watchlist. No API key.",
+  "description": "Household recall checks over public CPSC, openFDA, EMA and EU Safety Gate data. No API key.",
   "repository": {
     "url": "https://github.com/MGrin/recall-radar-mcp",
     "source": "github"
   },
-  "version": "0.1.0",
+  "version": "0.2.0",
   "packages": [
     {
       "registryType": "mcpb",
-      "identifier": "https://github.com/MGrin/recall-radar-mcp/releases/download/v0.1.0/household-recall-watch.mcpb",
-      "fileSha256": "bc72414c069af038aeae263ed01be26be6a34f9ffaf3878331351dce37d92095",
+      "identifier": "https://github.com/MGrin/recall-radar-mcp/releases/download/v0.2.0/household-recall-watch.mcpb",
+      "fileSha256": "88d8c1be25487fcbf66da7b0306db67b4d95c5fde55e08f01384b18abdf3aa1c",
       "transport": {
         "type": "stdio"
       }

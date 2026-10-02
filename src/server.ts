@@ -1,13 +1,14 @@
-/** The MCP server: seven tools, voice-shaped output, structured content on every result. */
+/** The MCP server: eight tools, voice-shaped output, structured content on every result. */
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { RecallService, type SearchResult } from './service.js';
 import { RecallSchema, type FetchLike, type Recall } from './types.js';
+import { SAFETY_GATE_ATTRIBUTION } from './sources/safetygate.js';
 import { KINDS, Watchlist, WatchItemSchema } from './watchlist.js';
 
 export const SERVER_NAME = 'recall-radar';
-export const SERVER_VERSION = '0.1.0';
+export const SERVER_VERSION = '0.2.0';
 export const DISCLAIMER = 'Not medical or safety advice: always check the linked notice and ask a pharmacist, doctor or the manufacturer.';
 
 export interface Deps {
@@ -17,6 +18,9 @@ export interface Deps {
 
 /** Default look-back of check_my_household. Half a year: a recall stays findable long after the week it was news. */
 export const HOUSEHOLD_DEFAULT_DAYS = 180;
+
+/** Default look-back of search_eu_product_recalls: four weekly Safety Gate reports. */
+export const EU_DEFAULT_DAYS = 28;
 
 export function makeDeps(opts: { fetchImpl?: FetchLike; watchlistPath: string; now?: () => Date }): Deps {
     return {
@@ -82,7 +86,7 @@ export function createServer(deps: Deps): McpServer {
         { name: SERVER_NAME, version: SERVER_VERSION, title: 'Recall Radar' },
         {
             instructions:
-                'Household safety assistant over public recall data: US CPSC product recalls, openFDA food/drug/device enforcement reports, and EMA (EU) medicine shortages. ' +
+                'Household safety assistant over public recall data: US CPSC product recalls, openFDA food/drug/device enforcement reports, EMA (EU) medicine shortages and EU Safety Gate product alerts. ' +
                 'Read the `spoken` field aloud; always offer the source URL and date. Never tell a user to stop a prescribed medicine; tell them to ask a pharmacist or doctor.',
         },
     );
@@ -154,6 +158,29 @@ export function createServer(deps: Deps): McpServer {
             const from = since ?? service.daysAgo(365);
             const r = await service.medicines({ query, region, since: from, limit });
             return ok({ spoken: spokenFor('medicine alerts', query, from, r), query, since: from, count: r.results.length, ...r, disclaimer: DISCLAIMER }, sourcesLine(r.results));
+        }),
+    );
+
+    server.registerTool(
+        'search_eu_product_recalls',
+        {
+            title: 'Search EU product recalls',
+            description:
+                'Find products flagged as dangerous in the European Union (toys, chargers, cosmetics, appliances, e-bikes, cars) by product, brand, model or barcode. ' +
+                'Use when someone in Europe asks whether a product they bought was recalled or withdrawn. Source: EU Safety Gate weekly alerts (formerly RAPEX), up to the last 12 weekly reports. Returns the risk, the measure taken, the date and the official alert link.',
+            inputSchema: {
+                query: z.string().min(2).max(80).describe('Product, brand, model or barcode as the user said it, e.g. "usb charger", "Hyundai Ioniq 6", "4006381333931".'),
+                since: isoDate.optional().describe(`Only alerts in weekly reports published on or after this date (YYYY-MM-DD). Default: ${EU_DEFAULT_DAYS} days ago. At most the 12 most recent weekly reports are read.`),
+                limit,
+            },
+            outputSchema: { ...searchOutput, attribution: z.string().describe('The source credit the European Commission requires on any reuse of Safety Gate alerts.') },
+            annotations: readOnly,
+        },
+        safe(async ({ query, since, limit }) => {
+            const r = await service.euProducts({ query, since: since ?? service.daysAgo(EU_DEFAULT_DAYS), limit });
+            const { since: from, ...rest } = r;
+            const s = { spoken: spokenFor('EU product recalls', query, from, r), query, since: from, count: r.results.length, ...rest, disclaimer: DISCLAIMER, attribution: SAFETY_GATE_ATTRIBUTION };
+            return ok(s, `${sourcesLine(r.results)}${r.results.length ? '\n' : ''}${SAFETY_GATE_ATTRIBUTION}`);
         }),
     );
 

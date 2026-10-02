@@ -1,7 +1,7 @@
 import type { FetchLike } from './types.js';
 
 export const FETCH_TIMEOUT_MS = 10_000;
-export const USER_AGENT = 'recall-radar-mcp/0.1 (+https://github.com/MGrin/recall-radar-mcp)';
+export const USER_AGENT = 'recall-radar-mcp/0.2 (+https://github.com/MGrin/recall-radar-mcp)';
 
 export class UpstreamError extends Error {
     constructor(message: string, readonly source: string, readonly status: number | null = null) {

@@ -24,4 +24,10 @@ describe.skipIf(!live)('live upstreams', () => {
         expect(r.warnings).toEqual([]);
         expect(r.results.some((x) => x.source === 'ema-shortages')).toBe(true);
     }, 30_000);
+    it('EU Safety Gate', async () => {
+        const r = await svc.euProducts({ query: 'charger', since: svc.daysAgo(28), limit: 3 });
+        expect(r.warnings).toEqual([]);
+        expect(r.results.length).toBeGreaterThan(0);
+        r.results.forEach((x) => RecallSchema.parse(x));
+    }, 120_000);
 });

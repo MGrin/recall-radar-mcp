@@ -1,12 +1,12 @@
 import { z } from 'zod';
 
-export const SOURCES = ['cpsc', 'openfda-food', 'openfda-drug', 'openfda-device', 'ema-shortages'] as const;
+export const SOURCES = ['cpsc', 'openfda-food', 'openfda-drug', 'openfda-device', 'ema-shortages', 'eu-safety-gate'] as const;
 export type SourceId = (typeof SOURCES)[number];
 
 /** One recall or medicine alert, normalised across every upstream. */
 export const RecallSchema = z.object({
     source: z.enum(SOURCES).describe('Which public data source this came from.'),
-    id: z.string().describe('The upstream identifier (CPSC recall number, FDA recall number, EMA shortage URL).'),
+    id: z.string().describe('The upstream identifier (CPSC recall number, FDA recall number, EMA shortage URL, Safety Gate case number).'),
     title: z.string(),
     hazard: z.string().describe('What is wrong, as the source states it.'),
     remedy: z.string().describe('What to do, as the source states it, or a safe default when the source gives none.'),

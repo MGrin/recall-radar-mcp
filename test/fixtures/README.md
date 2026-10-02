@@ -7,3 +7,8 @@ Recorded 2026-09-26 with curl from the live endpoints. Kept as returned except:
 - openfda-device-thermometer.json: api.fda.gov/device/enforcement.json?search=product_description:"thermometer"&limit=2&sort=report_date:desc
 - openfda-not-found.json: openFDA's HTTP 404 body for a search with no matches
 - ema-shortages.json: ema.europa.eu/en/documents/report/shortages-output-json-report_en.json
+
+EU Safety Gate, recorded 2026-10-02 with curl from the live endpoints, trimmed to whole elements:
+- safetygate-list.xml: ec.europa.eu/safety-gate-alerts/api/download/weeklyReport/list/xml/en, kept to 4 of the 1,118 rows (Report-2026-39, -38, -37 and -29)
+- safetygate-report-10000324.xml: weeklyReport/detail/xml/10000324 (Report-2026-38), 4 of its 84 alerts
+- safetygate-report-10000323.xml: weeklyReport/detail/xml/10000323 (Report-2026-37), 4 of its 97 alerts

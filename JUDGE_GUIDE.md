@@ -36,9 +36,10 @@ With the server running:
 
 ```sh
 curl -fsS http://127.0.0.1:3000/healthz
-npm run call  # lists all seven tools through the bundled Streamable HTTP SDK client
+npm run call  # lists all eight tools through the bundled Streamable HTTP SDK client
 npm run call -- search_product_recalls '{"query":"crib","limit":3}'
 npm run call -- watchlist_list '{}'
+npm run call -- search_eu_product_recalls '{"query":"usb charger","limit":3}'  # EU Safety Gate, added in v0.2.0
 ```
 
 For MCP Inspector, run `npx @modelcontextprotocol/inspector`, select **Streamable HTTP**, connect to `http://127.0.0.1:3000/mcp`, then list and call tools. `/mcp` is a stateless POST endpoint; a browser GET returns 405. A raw `initialize` response may be SSE rather than plain JSON.
