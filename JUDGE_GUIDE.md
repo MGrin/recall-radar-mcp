@@ -58,4 +58,4 @@ The UI is at `http://127.0.0.1:3000/`, MCP at `/mcp`, and health at `/healthz`. 
 - A watchlist check is **on demand**. This version does not schedule alerts or know what is actually in a household until someone adds an item.
 - Results may be incomplete or delayed. The UI shows source warnings where one upstream fails. Confirm the product and lot against the linked notice; ask a pharmacist or doctor before changing medicine use.
 - The browser has push-to-talk and spoken-reply code, with typed input as fallback. Microphone permission, speech recognition and speaker output have **not** been tested on a real device; the demo video enters its questions from the page address and says so. The OpenAI adapter was run live with `gpt-6-luna` on 2026-10-02.
-- The repository is currently private. Review access and public video requirements are listed in [SUBMISSION_DRAFT.md](SUBMISSION_DRAFT.md); access must be arranged before judging.
+- What was and was not verified, with dates, is in [EVIDENCE.md](EVIDENCE.md).
