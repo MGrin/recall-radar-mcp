@@ -19,7 +19,8 @@
     "start:stdio": "npm run build && node dist/stdio.js",
     "test": "vitest run",
     "test:live": "LIVE=1 vitest run test/live.test.ts",
-    "call": "node scripts/call.mjs"
+    "call": "node scripts/call.mjs",
+    "pack:mcpb": "sh scripts/pack-mcpb.sh"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.30.1",
