@@ -68,6 +68,11 @@ Endpoints: `POST /mcp` (MCP Streamable HTTP, stateless: no session id, no GET st
 `GET /` (the UI), `POST /api/ask` (`{"q": "...", "history": [...]}`), `GET /api/config`, `GET /api/watchlist`.
 A stdio entry is also included: `npm run start:stdio`.
 
+The stdio entry is listed in the [MCP Registry](https://registry.modelcontextprotocol.io) as
+`io.github.MGrin/household-recall-watch` ([server.json](server.json)). Its package is an MCPB bundle
+attached to the GitHub release; `npm run pack:mcpb` rebuilds it and prints the SHA-256 that
+`server.json` must carry. The bundle keeps its watchlist at `~/.recall-radar/watchlist.json`.
+
 If your machine reaches the internet only through an HTTP proxy, Node's built-in `fetch` ignores
 `HTTPS_PROXY` unless you set `NODE_USE_ENV_PROXY=1` (Node 24+). That applies to the OpenAI calls too.
 
