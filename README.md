@@ -73,6 +73,9 @@ The stdio entry is listed in the [MCP Registry](https://registry.modelcontextpro
 `io.github.MGrin/household-recall-watch` ([server.json](server.json)). Its package is an MCPB bundle
 attached to the GitHub release; `npm run pack:mcpb` rebuilds it and prints the SHA-256 that
 `server.json` must carry. The bundle keeps its watchlist at `~/.recall-radar/watchlist.json`.
+Publishing is `.github/workflows/publish-mcp.yml`: on a `v*` tag (or `gh workflow run publish-mcp.yml
+--ref vX.Y.Z`) it checks the release bundle against `server.json`, then publishes with GitHub OIDC.
+Attach the bundle to the GitHub release before the workflow runs.
 
 If your machine reaches the internet only through an HTTP proxy, Node's built-in `fetch` ignores
 `HTTPS_PROXY` unless you set `NODE_USE_ENV_PROXY=1` (Node 24+). That applies to the OpenAI calls too.
@@ -135,6 +138,9 @@ npm run call -- check_my_household '{}'
 
 ## Tools
 
+Eight tools. `search_eu_product_recalls` was added in v0.2.0, after the demo video was recorded; the
+video shows and says seven.
+
 | tool | what it answers | sources |
 |---|---|---|
 | `search_product_recalls` | "Has my stroller / space heater / crib been recalled?" | CPSC, openFDA device |
@@ -143,7 +149,7 @@ npm run call -- check_my_household '{}'
 | `watchlist_add` | "Keep an eye on my Graco stroller." (`kind`: product, food, medicine, any) | local file |
 | `watchlist_list` | "What am I watching?" | local file |
 | `watchlist_remove` | "Stop watching the stroller." | local file |
-| `search_eu_product_recalls` | "Was my USB charger recalled in the EU?" By product, brand, model or barcode (default: last 28 days, at most the 12 latest weekly reports) | EU Safety Gate |
+| `search_eu_product_recalls` (v0.2.0) | "Was my USB charger recalled in the EU?" By product, brand, model or barcode (default: last 28 days, at most the 12 latest weekly reports) | EU Safety Gate |
 | `check_my_household` | "Has anything in my house been recalled?" (default: last 180 days) | CPSC, openFDA, EMA, by item kind (not Safety Gate) |
 
 Each tool declares a zod input schema and an `outputSchema`; results come back as `structuredContent`
