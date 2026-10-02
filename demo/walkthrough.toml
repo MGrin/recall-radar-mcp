@@ -1,5 +1,6 @@
-# The hackathon demo video, rendered with the studio's media toolkit (passive-income
-# tools/media/walkthrough.py). Each distinct url is loaded ONCE against a running server and
+# The shot list of the hackathon demo video. It was rendered with our own in-house walkthrough
+# renderer (not part of this repository): Playwright captures, a virtual camera, captions and a
+# local text-to-speech narrator. Each distinct url is loaded ONCE against a running server and
 # asks its `q` for real: with MODEL_PROVIDER=openai that is one live model run per url, and
 # live recall data. Re-check every spoken fact against the frames after each render.
 #

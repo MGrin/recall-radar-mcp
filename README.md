@@ -15,8 +15,8 @@ Built for the Amazon Developer Hackathon, Alexa+ track. MCP spec **2025-11-25**,
 stateless, `@modelcontextprotocol/sdk` 1.30.1.
 
 This is a **simulated** smart-display experience backed by a real MCP server; it has not been connected
-to an Alexa+ device. See the [judge-run guide](JUDGE_GUIDE.md), [Devpost draft and video plan](SUBMISSION_DRAFT.md),
-and [verification record](EVIDENCE.md).
+to an Alexa+ device. See the [judge-run guide](JUDGE_GUIDE.md), the [verification record](EVIDENCE.md) and the
+[friction log](FRICTION.md).
 
 > **Not medical or safety advice.** Recall and shortage data can be incomplete or late. Always check
 > the linked notice, and ask a pharmacist, doctor or the manufacturer before acting. Never stop a
@@ -99,7 +99,7 @@ A `ModelAdapter` (`types.ts`) is one method: messages + tools in, text or tool c
 
 | adapter | status |
 |---|---|
-| `openai` (`openai.ts`) | OpenAI Chat Completions with tools over plain `fetch`, no SDK. Unit-tested against recorded-shape responses, including a 3-step tool loop. **Not yet run against the live API** (no key on the build machine). |
+| `openai` (`openai.ts`) | OpenAI Chat Completions with tools over plain `fetch`, no SDK. Unit-tested against recorded-shape responses, including a 3-step tool loop. Run against the live API with `gpt-6-luna` on 2026-10-02 ([EVIDENCE.md](EVIDENCE.md)). |
 | `ollama` | The same class pointed at Ollama's OpenAI-compatible endpoint. **Untested**: Ollama was not installed on the build machine. |
 | `scripted` (`scripted.ts`) | Deterministic: a few phrasings map to one tool call, and the reply is the tool's own `spoken` sentence (first item only). Used by the tests and the no-key demo. |
 

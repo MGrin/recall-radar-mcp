@@ -1,6 +1,6 @@
 # Verification record — 2026-09-27
 
-This record concerns the existing Recall Radar app on `origin/main` plus the focused fixes in this PR. All app data and ports used for live exercise were isolated to this thread; no OpenAI model call was made.
+This record concerns the Recall Radar app as of 2026-09-27, including the fixes made that day. The live exercise used its own watchlist file and port; no OpenAI model call was made.
 
 | Check | Result |
 |---|---|
@@ -19,11 +19,11 @@ This record concerns the existing Recall Radar app on `origin/main` plus the foc
 
 ## Limits and pending checks
 
-- The parent's fresh read-only `/v1/models` check of the available OpenAI key returned HTTP 401 `invalid_api_key`, even after `opc --fresh`. This worker did not repeat the probe or spend on a model request. The adapter has fixture tests only.
+- A read-only `/v1/models` check of the OpenAI key available that day returned HTTP 401 `invalid_api_key`. No model request was made. The adapter has fixture tests only.
 - A headless browser exposed Web Speech objects but had no verified microphone or speaker. Code review and UI presence do **not** establish speech behavior. A real-device mic, recognition, spoken output and mute check remain pending.
 - The Docker smoke test preceded the final FDA wording edit; the final source was compiled, tested against fixtures, and exercised through live MCP calls on the host. The Dockerfile itself did not change.
 - The browser's scripted mode maps known phrases to MCP calls. It was never presented as an LLM. Live source results and the default 90-day window can change before judging.
-- No Alexa+ device integration, automatic background alerting, video, public repository, reviewer invitation, Devpost registration or submission is claimed.
+- No Alexa+ device integration, automatic background alerting or video is claimed.
 
 ---
 
@@ -39,7 +39,7 @@ Supersedes the two 2026-09-27 limits about the OpenAI key and the missing video.
 | Live agent loop, `gpt-6-luna`, after the fix | `POST /api/ask` × 3, all HTTP 200, 2 model steps each, 3–7 s. "Watch my crib mattress and my ibuprofen" produced two `watchlist_add` calls in one turn (product, medicine). "Has anything in my house been recalled?" called `check_my_household` and answered with the 2026-08-06 CPSC Voomf play-yard and crib-mattress recall. "Is there a recall on peanut butter?" called `search_food_recalls` and returned five FDA food records. |
 | CPSC outage found during the check | CPSC's `ProductName` filter answered HTTP 503 ("Under Construction") while the date-only listing answered 200. The model reply said so: *"The CPSC source was unavailable, so this check may be incomplete."* `searchCpsc` now falls back to the date-only listing and filters locally; test added. After the fix the household check found the CPSC recall while the upstream filter was still down. |
 | `npm run build`; `npm test` | Passed; 50 passed, 3 opt-in live tests skipped. |
-| Demo video | `demo/walkthrough.toml`, rendered with the studio media toolkit: 2:09, 1920×1080, H.264 + AAC, with captions. Four distinct questions, each asked once of the live `gpt-6-luna` model against live CPSC, FDA and EMA data at render time. Eleven frames were extracted and read; every spoken fact matched the screen. The file is a draft held outside the repository and is not published. |
+| Demo video | `demo/walkthrough.toml`, rendered with our in-house walkthrough renderer (not in this repository): 2:09, 1920×1080, H.264 + AAC, with captions. Four distinct questions, each asked once of the live `gpt-6-luna` model against live CPSC, FDA and EMA data at render time. Eleven frames were extracted and read; every spoken fact matched the screen. The video file is kept outside the repository. |
 
 ## Limits that remain
 
@@ -49,7 +49,7 @@ Supersedes the two 2026-09-27 limits about the OpenAI key and the missing video.
 - Other OpenAI models were not exercised. A model that rejects `reasoning_effort` needs `OPENAI_REASONING_EFFORT=omit`; that path has a unit test, not a live run.
 - Ollama is still untested. Docker was not rebuilt after these changes; the Dockerfile did not change.
 - Live recall results change. The household check's default window was 90 days on 2026-10-02, which would have dropped the 2026-08-06 crib-mattress match on 2026-11-04, before judging (2026-11-09 to 2026-11-20). It is now **180 days** (in range until 2027-02-02), with a test pinning both the default and the judging-period bound. The video was rendered under the 90-day default: its on-screen reply reads "since July 4, 2026". No spoken or captioned line names the window, so it was not re-rendered.
-- No Alexa+ device integration, public repository, reviewer invitation, video upload, Devpost registration or submission has happened.
+- No Alexa+ device integration is claimed.
 
 ## Addendum — 2026-10-02, later the same day (window widened, CPSC outage re-read)
 
@@ -57,3 +57,4 @@ Supersedes the two 2026-09-27 limits about the OpenAI key and the missing video.
 - **The crib-mattress match was NOT re-verified live under the new default.** That call answered "none … matched … Some sources were unavailable", because CPSC answered HTTP 503 for the new window's URL.
 - **Correction to the table above.** The CPSC outage is not limited to the `ProductName` filter. On 2026-10-02 the API answered 503 or 200 consistently per URL: `RecallDateStart=2026-07-04` and `2026-09-01` answered 200, `2026-07-05` and `2026-04-05` answered 503 on every one of 6–8 tries, with or without `ProductName`. That pattern fits an origin that is down with a few cached responses still served; the cause was not established. The fallback found the recall earlier only because its date-only URL was one that answered.
 - Consequence: while that outage lasts, product recalls can be missing from any answer; the reply says a source was unavailable. The fallback stays (it costs one extra request and helps when only the filtered query fails). Re-run the household check live once CPSC answers again.
+- **Re-read 2026-10-02, a third time:** CPSC still answered HTTP 503 for the 180-day window's URL, with and without `ProductName`, on three tries each. The crib-mattress match under the 180-day default remains unverified live.

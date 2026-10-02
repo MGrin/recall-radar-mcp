@@ -1,8 +1,7 @@
 /**
  * European Medicines Agency: medicine shortages catalogue (JSON report).
  *
- * Adapted from our own pre-existing code: the `ema-medicines-watch` Apify Actor
- * (passive-income/tools/t6-ema-medicines-watch/actor/src/{ema,parse}.ts) — the
+ * Adapted from our own pre-existing code, the `ema-medicines-watch` Apify Actor: the
  * dd/mm/yyyy parser, the {meta, data[]} shape check and the truncation guard.
  *
  * EMA's legal notice permits reuse provided EMA is acknowledged as the source,
