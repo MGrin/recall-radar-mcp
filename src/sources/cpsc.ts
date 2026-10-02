@@ -55,5 +55,9 @@ export async function searchCpsc(fetchImpl: FetchLike, q: { productName?: string
         body = Array.isArray(all) ? all.filter((r) => matchesLocally(r as Record<string, unknown>, q.productName!)) : all;
     }
     if (!Array.isArray(body)) throw new UpstreamError('CPSC answered with something other than a list of recalls', 'CPSC');
+    // CPSC can answer HTTP 200 with one placeholder row whose Title is its own error text.
+    if (body.some((r) => !(r as Record<string, unknown>)?.RecallNumber && /^Error retrieving/i.test(str((r as Record<string, unknown>)?.Title)))) {
+        throw new UpstreamError('CPSC answered with an error row instead of recalls', 'CPSC');
+    }
     return body.map((r) => normaliseCpsc(r as Record<string, unknown>)).filter((r) => r.id);
 }

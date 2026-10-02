@@ -26,6 +26,12 @@ describe('CPSC', () => {
         expect(await searchCpsc(fixtureFetch({ empty: true }).impl, { productName: 'x', since: '2026-01-01' })).toEqual([]);
     });
 
+    it('treats a 200 carrying CPSC\'s own error row as an upstream failure, not a recall', async () => {
+        const row = [{ RecallID: 0, RecallNumber: null, RecallDate: null, Title: 'Error retrieving Recalls: The underlying provider failed on Open.', Products: [] }];
+        const impl = async () => new Response(JSON.stringify(row), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        await expect(searchCpsc(impl as never, { since: '2026-04-04' })).rejects.toThrow(/error row/);
+    });
+
     it('falls back to a date-only fetch and filters locally when the filtered query fails', async () => {
         const calls: string[] = [];
         const impl = async (url: string) => {
