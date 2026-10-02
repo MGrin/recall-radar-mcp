@@ -75,3 +75,8 @@ Supersedes the two 2026-09-27 limits about the OpenAI key and the missing video.
 - **Terms.** The Safety Gate disclaimer PDF was re-fetched: still three revisions, the newest dated 2026-06-11, the revision whose attribution reads "2005 – 2026". When the Commission rolls the year, `SAFETY_GATE_ATTRIBUTION` must follow.
 - Not checked: the browser UI and the OpenAI path with the eighth tool (the model sees it through `tools/list`; no model call was made), Docker, and Safety Gate's rate limit (each search reads at most 12 reports, four at a time).
 
+
+## Addendum — 2026-10-02T13:01Z (v0.2.0 in the MCP Registry)
+
+- Published by `.github/workflows/publish-mcp.yml` (run 37010301584, `workflow_dispatch` on `main`): the release bundle's SHA-256 matched `server.json` (`88d8c1be…aa1c`), `validate` passed, `login github-oidc` and `publish` succeeded.
+- Read back from the public API, `GET https://registry.modelcontextprotocol.io/v0.1/servers/io.github.MGrin%2Fhousehold-recall-watch/versions/latest`: version `0.2.0`, status `active`, `isLatest: true`, `publishedAt` 2026-10-02T13:01:48Z, package `…/releases/download/v0.2.0/household-recall-watch.mcpb` with the same SHA-256.
