@@ -98,3 +98,10 @@ During the same preparation pass, our own app had a generic stop-using phrase on
 medical-device cards, and at 800×519 the responsive footer covered a watchlist remove button.
 Both were repaired and exercised; they are product defects, not SDK/API friction, and are recorded in
 [EVIDENCE.md](EVIDENCE.md) rather than offered as bonus friction entries.
+
+## 2026-10-02 — first live model run
+
+| Task and steps | Expected / actual | Severity | Workaround | Actionable suggestion |
+|---|---|---|---|---|
+| Run the agent loop against OpenAI Chat Completions with `gpt-6-luna` and seven function tools, no `reasoning_effort` set. | Expected tool calls, as our fixture-shaped tests returned; actual HTTP 400, *"Function tools with reasoning_effort are not supported for gpt-6-luna in /v1/chat/completions"*. | Blocking until found: every question failed. | Send `reasoning_effort: "none"` (now the adapter default, `OPENAI_REASONING_EFFORT` to change). | A recorded-shape fixture cannot catch a per-model parameter rule; keep one live smoke run per provider before a demo. |
+| Call the CPSC Recall API with `ProductName=crib` plus a date. | Expected a filtered list; actual HTTP 503 "Under Construction" for every filtered query on 2026-10-02, while the date-only query answered 200. | High for a product demo: the main source vanished. | On a failed filtered query, fetch by date and filter locally. | Treat upstream filters as optional; the tool already reported the missing source in its answer, which is how we noticed. |

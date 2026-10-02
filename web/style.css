@@ -32,7 +32,7 @@ button { cursor: pointer; }
 .device {
     position: relative;
     width: min(1280px, 100vw - 48px);
-    height: min(800px, 100vh - 48px);
+    height: min(var(--device-max-h, 800px), 100vh - 48px);
     display: grid;
     grid-template-rows: auto 1fr auto;
     background: linear-gradient(180deg, #0d131c 0%, var(--screen) 40%, #090d13 100%);

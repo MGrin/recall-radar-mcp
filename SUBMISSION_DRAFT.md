@@ -7,13 +7,13 @@
 - **Repository:** <https://github.com/MGrin/recall-radar-mcp> (currently private)
 - **Mini challenges:** None claimed here. The separate recall-feeds Open Source mini-challenge work is pending; do not select it until a qualifying public contribution exists. No AWS Builder claim.
 
-## Project description (update pending checks before pasting)
+## Project description
 
 “Has anything in my house been recalled?” is a hard question to answer from memory. Recall Radar gives a household assistant a watchlist and seven MCP tools to check public US product, food, device and drug recall records, plus European medicine shortages. A person can add a crib mattress, ask about their household, and see the matching notice with its date, hazard, remedy and official link.
 
 The entry runs a self-hosted MCP server over Streamable HTTP using MCP protocol version `2025-11-25`. Its TypeScript server imports and calls the MCP SDK at runtime. A companion web app simulates a smart display: it shows the answer, source cards, transcript and each MCP tool call. The app also has browser speech controls and typed input. The watchlist is stored locally and checked on request; it does not send automatic alerts.
 
-We built this during the hackathon window. CPSC, openFDA and EMA need no API key. A deterministic, visibly labelled scripted mode lets a judge run the real MCP tools and live public data without a model account. An OpenAI adapter and agent tool loop are implemented, with fixture tests; a successful live OpenAI call and microphone/speaker exercise are still pending. We will record the public demo only after those checks. This is a simulated Alexa+ experience; no Alexa+ device connection is claimed.
+We built this during the hackathon window. CPSC, openFDA and EMA need no API key. A deterministic, visibly labelled scripted mode lets a judge run the real MCP tools and live public data without a model account. With an OpenAI key, a model (`gpt-6-luna`) drives the same tools through an agent loop; we ran that live, and the demo video shows it. The video's questions are entered from the page address rather than spoken: microphone and speaker were not tested, and its narration is a synthetic voice. This is a simulated Alexa+ experience; no Alexa+ device connection is claimed.
 
 The most useful design choice is provenance: a spoken headline stays short, while each card carries the source URL and date. If an upstream fails, the response reports a warning. Medicine text tells users to consult a pharmacist or doctor before changing treatment. This is an on-demand information aid, not medical or safety advice.
 
@@ -23,6 +23,7 @@ The most useful design choice is provenance: a spoken headline stays short, whil
 - CPSC recall search, openFDA food/drug/device enforcement and EMA's shortage JSON are normalized into one source-linked result shape. The watchlist persists to a local JSON file.
 - The simulated display shows MCP traces and recall cards. Browser speech controls exist, with typed input available when speech is unsupported or permission is unavailable.
 - Real integration work exposed openFDA's 404 response for zero matches, Node proxy behavior, and the SDK's SSE `initialize` response. [FRICTION.md](FRICTION.md) records reproducible steps and workarounds.
+- The first live model call failed: `gpt-6-luna` refuses function tools on Chat Completions unless `reasoning_effort` is `none`. Our fixture tests had passed. The same day CPSC's product-name filter answered 503, so the server now falls back to a date listing and filters locally.
 - We caught and repaired two demo blockers during exercise: generic stop-using wording on FDA drug and medical-device records, and a responsive layout that covered watchlist removal in an 800×519 viewport. [EVIDENCE.md](EVIDENCE.md) has the checks and limits.
 
 ## Required product feedback draft
@@ -33,8 +34,8 @@ The most useful design choice is provenance: a spoken headline stays short, whil
 | US CPSC Recall API — product search | Keyless JSON and dated source links worked in the live check. | `ProductName` can return broad matches: a “stroller” search also returned stroller bags and doll strollers. The UI therefore shows full titles and source links rather than claiming ownership of a specific model. | Yes, with careful query and notice verification. |
 | openFDA enforcement API — food, drug, device | Keyless category search, date filters and recall numbers worked in the live check. | An empty search returns 404 instead of an empty `results` list; we handle that explicitly. A recall number links to an API record, not a human-readable notice page. | Yes, with the 404 and medical-care disclaimer handled. |
 | EMA shortage JSON — EU medicine shortages | The live file parsed into dated entries with EMA links. | The full file needs validation and caching; repeated downloads were rate-limited during development. We cache it for one hour. | Yes, for shortage context, while keeping it distinct from a recall. |
-| Browser Web Speech API — push-to-talk and spoken reply | Typed input and scripted browser walkthrough worked. | Microphone, speech recognition and speaker output are **not yet verified on a real device**, so this feedback must be completed after capture. | Decision pending real-device check. |
-| OpenAI Chat Completions API — model tool calls | Fixture-shaped responses and a multi-step tool loop pass locally. | The available key returned HTTP 401 `invalid_api_key` in the parent's read-only check. We made no live model call; complete this row after a valid key is supplied and exercised. | Decision pending live check. |
+| Browser Web Speech API — push-to-talk and spoken reply | Typed input and the address-driven walkthrough worked. | Microphone, speech recognition and speaker output were **not verified on a real device**; a headless browser has neither. We cannot give feedback on them. | Unknown until tested on a device. |
+| OpenAI Chat Completions API — model tool calls | Live with `gpt-6-luna`: parallel tool calls in one turn, short voice-shaped answers, 3–7 s per question. | The first live call answered HTTP 400: function tools need `reasoning_effort: "none"` on Chat Completions for this model. Fixture tests cannot catch that. | Yes, with that field set. |
 
 **Onboarding summary:** `npm ci && MODEL_PROVIDER=scripted npm start` brings up the keyless judge path; a clean package install and Docker build were also exercised locally. The app needs no special Alexa+ device access for its simulated front end. Do not describe an actual Alexa+ device run.
 
@@ -47,23 +48,32 @@ Choose one repository path before submitting:
 - Public: make the repository public with the open-source `LICENSE` visible on the repository page, after mgrin's go-ahead.
 - Private: share with `testing@devpost.com` **and** the Amazon team named in the current rules: `chris-trag`, `knmeiss`, `giolaq`, `anishamalde`, `mosesroth`, `emersonsklar`. These invitations have not been sent.
 
-Pending human acts: valid OpenAI key; live model and mic/speaker checks; approved media capture workflow and public YouTube/Vimeo upload; Devpost registration and submission; repository access choice and permissions. Do not paste this draft as if those checks already happened. Keep the Open Source mini challenge unselected until its separate public contribution exists.
+Keep the Open Source mini challenge unselected until its separate public contribution exists.
 
-## Video storyboard (target 2:35, maximum 2:59)
+## mgrin's steps, in order (about 60 minutes in total)
 
-| Time | Picture | Narration cue |
-|---|---|---|
-| 0:00–0:18 | Recall Radar home screen and mode badge | “Household recalls span products, food and medicine. Recall Radar lets an assistant check all three.” |
-| 0:18–0:43 | Add “crib mattress” by verified voice input, or type it and say “typed input” | “I add the item I own to a local watchlist.” Show `watchlist_add` in the trace. |
-| 0:43–1:22 | Ask “Has anything in my house been recalled?” | “The assistant checks public sources now.” Show `check_my_household`, the dated CPSC match, hazard and remedy; open the official notice briefly. |
-| 1:22–1:47 | Ask a food or medicine question | “The same tools also reach FDA and EMA data. Each result links back to its source.” Show source and date; do not advise stopping medicine. |
-| 1:47–2:13 | Terminal or MCP Inspector: list seven tools, then one call | “The web experience is backed by a self-hosted MCP server over Streamable HTTP, not a painted demo.” |
-| 2:13–2:35 | Return to the display and watchlist | “Checks are on demand, and the linked notice is the final source of truth.” |
+Nothing below has been done. Registration, access, upload and submission are his.
 
-### Exact capture checklist
+1. **Watch the video draft** (5 min). File: `~/.bb/thread-storage/thr_i26k7a9cgi/recall-radar-demo/walkthrough.mp4` (2:09). Say go or list changes. A change means a re-render of about 10 minutes.
+2. **Register on Devpost** (10 min). Open <https://amazonappdev2026.devpost.com>, sign in or create the account as Nikita Grishin Limited (organisation), press **Join hackathon**, accept the rules.
+3. **Choose repository access** (5 min), one of:
+   - Public: GitHub → `MGrin/recall-radar-mcp` → Settings → Danger Zone → Change visibility → Public. The MIT `LICENSE` is already at the root.
+   - Private: Settings → Collaborators → add `testing@devpost.com` and the Amazon reviewers `chris-trag`, `knmeiss`, `giolaq`, `anishamalde`, `mosesroth`, `emersonsklar` (read access). Re-check that list against the rules page first.
+4. **Upload the video** (10 min). YouTube → Create → Upload `walkthrough.mp4` → visibility **Public** (the rules require publicly visible) → title "Recall Radar — Alexa+ track demo". Copy the URL.
+5. **Start the submission** (20 min). Devpost → the hackathon → **Enter a submission**:
+   - Track: **Alexa+**. Mini challenges: none.
+   - Name, tagline and description: paste from the top of this file.
+   - "Built with": TypeScript, Node.js, Model Context Protocol, OpenAI API.
+   - Repository URL, video URL.
+   - Testing instructions: paste the "Clean start" block of [JUDGE_GUIDE.md](JUDGE_GUIDE.md).
+   - Product feedback: paste the table above.
+   - Friction log: attach or paste [FRICTION.md](FRICTION.md) (up to +10%).
+6. **Press Submit** (2 min), by **2026-10-21**. The hard deadline is 2026-10-23 12:00 PT (19:00Z).
+7. **Keep it reachable until judging ends** (0 min): do not make the repository private or delete the video before 2026-11-20.
+8. **On a win**: W-8BEN-E and payout details (his).
 
-1. First obtain a **working** model key and confirm a real multi-step answer with tool traces; never show the key. Verify mic permission, recognition, spoken output and mute on the actual recording device. If speech fails, use typed input visibly and narrate that boundary.
-2. Use a fresh `WATCHLIST_PATH`, an empty watchlist, and `OPENAI_MODEL` set to the model actually verified. Show the real provider badge. Keep `MODEL_PROVIDER=scripted` only for a clearly labelled fallback clip; do not present its phrase mapping as model reasoning.
-3. Before capture, run the exact crib-mattress and food/medicine questions once to ensure live source reachability and usable results. Live dates and ordering can change. Keep the official notice URL and relevant card in frame.
-4. Record the existing app, MCP Inspector/CLI and actual browser speech only through the approved media workflow. Capture readable text and clear audio; trim to **<3:00**. No third-party marks, copyrighted music, fabricated voice exchange or ad hoc TTS video.
-5. Review the export for factual narration, complete source/date and tool trace, no secret or personal data, correct mode badge, and total duration. Publish only after mgrin approves the media and submission steps.
+Known weak points to decide on before step 5: the microphone and speaker were never tested on a real device (15 minutes on his laptop would settle it: `npm start`, open the page in Chrome, hold the mic); and the crib-mattress example ages out of the default 90-day window on 2026-11-04, before judging starts.
+
+## Video, as rendered 2026-10-02
+
+Script: [demo/walkthrough.toml](demo/walkthrough.toml). 2:09, twelve shots: the problem; adding two items (two `watchlist_add` calls); the household check and its CPSC card; food; medicine; the MCP layer; the limits, spoken aloud (simulated display, questions entered from the address, mic and speaker untested, synthetic narrator). To re-render, start the server on port 58640 with a fresh `WATCHLIST_PATH` and the model key, then run the studio toolkit's `walkthrough.py` on the script. Re-read the frames after every render: the data is live.

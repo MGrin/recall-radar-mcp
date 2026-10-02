@@ -25,6 +25,20 @@ describe('CPSC', () => {
     it('treats an empty list as no results', async () => {
         expect(await searchCpsc(fixtureFetch({ empty: true }).impl, { productName: 'x', since: '2026-01-01' })).toEqual([]);
     });
+
+    it('falls back to a date-only fetch and filters locally when the filtered query fails', async () => {
+        const calls: string[] = [];
+        const impl = async (url: string) => {
+            calls.push(url);
+            if (new URL(url).searchParams.has('ProductName')) return new Response('Under Construction', { status: 503 });
+            return new Response(fixture('cpsc-crib.json'), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        };
+        const hit = await searchCpsc(impl as never, { productName: 'crib mattress', since: '2026-07-01' });
+        expect(calls).toHaveLength(2);
+        expect(hit.length).toBeGreaterThan(0);
+        expect(hit[0].id).toBe('26669');
+        expect(await searchCpsc(impl as never, { productName: 'zzz-no-such-thing', since: '2026-07-01' })).toEqual([]);
+    });
 });
 
 describe('openFDA', () => {
