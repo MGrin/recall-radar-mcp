@@ -72,7 +72,7 @@ Nothing below has been done. Registration, access, upload and submission are his
 7. **Keep it reachable until judging ends** (0 min): do not make the repository private or delete the video before 2026-11-20.
 8. **On a win**: W-8BEN-E and payout details (his).
 
-Known weak points to decide on before step 5: the microphone and speaker were never tested on a real device (15 minutes on his laptop would settle it: `npm start`, open the page in Chrome, hold the mic); and the crib-mattress example ages out of the default 90-day window on 2026-11-04, before judging starts.
+Known weak points to decide on before step 5: the microphone and speaker were never tested on a real device (15 minutes on his laptop would settle it: `npm start`, open the page in Chrome, hold the mic). (The household check now looks back 180 days, so the crib-mattress example stays in range through judging.)
 
 ## Video, as rendered 2026-10-02
 

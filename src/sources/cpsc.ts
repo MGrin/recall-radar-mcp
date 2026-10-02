@@ -48,8 +48,8 @@ export async function searchCpsc(fetchImpl: FetchLike, q: { productName?: string
     try {
         body = await getJson(fetchImpl, cpscUrl(q), 'CPSC');
     } catch (err) {
-        // CPSC's ProductName filter has answered 503 "Under Construction" while the date-only listing
-        // still worked (2026-10-02). Fetch by date and filter here rather than lose the source.
+        // CPSC answered 503 "Under Construction" for some URLs and 200 for others on 2026-10-02.
+        // A second, date-only URL sometimes still answers; filter it here rather than lose the source.
         if (!q.productName || !(err instanceof UpstreamError)) throw err;
         const all = await getJson(fetchImpl, cpscUrl({ since: q.since }), 'CPSC');
         body = Array.isArray(all) ? all.filter((r) => matchesLocally(r as Record<string, unknown>, q.productName!)) : all;

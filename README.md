@@ -137,7 +137,7 @@ npm run call -- check_my_household '{}'
 | `watchlist_add` | "Keep an eye on my Graco stroller." (`kind`: product, food, medicine, any) | local file |
 | `watchlist_list` | "What am I watching?" | local file |
 | `watchlist_remove` | "Stop watching the stroller." | local file |
-| `check_my_household` | "Has anything in my house been recalled?" (default: last 90 days) | all of the above, by item kind |
+| `check_my_household` | "Has anything in my house been recalled?" (default: last 180 days) | all of the above, by item kind |
 
 Each tool declares a zod input schema and an `outputSchema`; results come back as `structuredContent`
 (validated by the SDK) and as text. Each recall is normalised to:
