@@ -1,0 +1,44 @@
+# Publishes server.json to the MCP Registry with GitHub Actions OIDC (no stored token).
+# Runs on a v* tag, or by hand: gh workflow run publish-mcp.yml --ref v0.2.0
+# Upload the release's household-recall-watch.mcpb BEFORE this runs: server.json carries its SHA-256.
+name: Publish to MCP Registry
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # OIDC login to the registry
+      contents: read
+    env:
+      PUBLISHER_VERSION: "1.8.1"
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install mcp-publisher (pinned, checksum-verified)
+        run: |
+          base="https://github.com/modelcontextprotocol/registry/releases/download/v${PUBLISHER_VERSION}"
+          curl -fsSLO "$base/mcp-publisher_linux_amd64.tar.gz"
+          curl -fsSL "$base/registry_${PUBLISHER_VERSION}_checksums.txt" | grep ' mcp-publisher_linux_amd64.tar.gz$' | sha256sum -c -
+          tar xzf mcp-publisher_linux_amd64.tar.gz mcp-publisher
+
+      - name: Check the bundle on the release matches server.json
+        run: |
+          url=$(jq -r '.packages[0].identifier' server.json)
+          want=$(jq -r '.packages[0].fileSha256' server.json)
+          got=$(curl -fsSL "$url" | sha256sum | cut -d' ' -f1)
+          echo "bundle $url sha256 $got (server.json: $want)"
+          test "$got" = "$want"
+
+      - name: Validate
+        run: ./mcp-publisher validate
+
+      - name: Authenticate to MCP Registry
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish
+        run: ./mcp-publisher publish
