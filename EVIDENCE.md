@@ -92,3 +92,8 @@ Supersedes the two 2026-09-27 limits about the OpenAI key and the missing video.
 - `npm test`: 75 passed, 4 opt-in live tests skipped (was 67 + 4 at v0.2.0). New: fallback start dates; exact OK; fallback OK with URL named; rows outside the window dropped; attempts bounded; all fail + saved copy (new process, read from disk); a saved copy for another product not used; all fail + no saved copy; and an MCP end-to-end household check through fallback, then a restart serving the stale copy. No remote CI exists on this repository; all of this is local.
 - **The MCPB bundle** (`npm run pack:mcpb`, SHA-256 `3e0073bc…3260`) was unpacked and run over stdio with the SDK client: server version 0.2.1, eight tools.
 - Not checked: the browser UI (cards carry no stale marker; the spoken reply and `warnings` do), the OpenAI path, Docker, and how long CPSC's outage pattern will last.
+
+## Addendum — 2026-10-04T05:09Z (v0.2.1 in the MCP Registry)
+
+- Merged as PR 12 (no CI on this repository; the suite ran locally, above). Release v0.2.1 created on the merge commit with the bundle attached; its tag push ran `.github/workflows/publish-mcp.yml` (run 37179053416): bundle SHA-256 matched `server.json` (`3e0073bc…3260`), `validate`, `login github-oidc` and `publish` succeeded.
+- Read back from `GET https://registry.modelcontextprotocol.io/v0.1/servers/io.github.MGrin%2Fhousehold-recall-watch/versions/latest`: version `0.2.1`, status `active`, `isLatest: true`, `publishedAt` 2026-10-04T05:09:23Z, package `…/releases/download/v0.2.1/household-recall-watch.mcpb` with the same SHA-256.
