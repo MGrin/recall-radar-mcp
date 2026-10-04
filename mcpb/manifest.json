@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "household-recall-watch",
   "display_name": "Household Recall Watch",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Household recall checks over public CPSC, openFDA, EMA and EU Safety Gate data. No API key.",
   "author": { "name": "Nikita Grishin Limited", "url": "https://github.com/MGrin/recall-radar-mcp" },
   "repository": { "type": "git", "url": "https://github.com/MGrin/recall-radar-mcp" },

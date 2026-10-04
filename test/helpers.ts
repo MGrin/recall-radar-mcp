@@ -8,7 +8,12 @@ export const fixture = (name: string): string => readFileSync(join(import.meta.d
 export const tmpWatchlist = (): string => join(mkdtempSync(join(tmpdir(), 'rr-')), 'watchlist.json');
 
 /** Routes upstream URLs to recorded fixtures. `fail` makes a named host misbehave. */
-export function fixtureFetch(opts: { fail?: Partial<Record<'cpsc' | 'fda' | 'ema' | 'sg', 'http500' | 'network' | 'timeout'>>; empty?: boolean } = {}) {
+export function fixtureFetch(opts: {
+    fail?: Partial<Record<'cpsc' | 'fda' | 'ema' | 'sg', 'http500' | 'network' | 'timeout'>>;
+    empty?: boolean;
+    /** CPSC answers only the URLs this accepts; the rest get 503 "Under Construction", as seen 2026-10-02..04. */
+    cpscAnswers?: (u: URL) => boolean;
+} = {}) {
     const calls: string[] = [];
     const impl: FetchLike = async (url, init) => {
         calls.push(url);
@@ -25,6 +30,7 @@ export function fixtureFetch(opts: { fail?: Partial<Record<'cpsc' | 'fda' | 'ema
         }
         if (mode === 'http500') return new Response('oops', { status: 500 });
         const json = (s: string, status = 200) => new Response(s, { status, headers: { 'Content-Type': 'application/json' } });
+        if (key === 'cpsc' && opts.cpscAnswers && !opts.cpscAnswers(u)) return new Response('Under Construction', { status: 503 });
         if (key === 'cpsc') return json(opts.empty ? '[]' : fixture('cpsc-crib.json'));
         if (key === 'ema') return json(fixture('ema-shortages.json'));
         if (key === 'sg') {

@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { RecallSchema } from '../src/types.js';
 import { getJson, firstSentence, UpstreamError } from '../src/http-util.js';
-import { cpscUrl, normaliseCpsc, searchCpsc } from '../src/sources/cpsc.js';
+import { existsSync, mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { CPSC_MAX_ATTEMPTS, CpscClient, cpscUrl, fallbackStarts, normaliseCpsc } from '../src/sources/cpsc.js';
 import { cleanTerm, openFdaUrl, searchOpenFda } from '../src/sources/openfda.js';
 import { fetchEmaShortages, matchesMedicine, parseEuDate } from '../src/sources/ema.js';
 import { fixture, fixtureFetch } from './helpers.js';
@@ -23,27 +26,111 @@ describe('CPSC', () => {
         expect(r.summary).toMatch(/^Voomf Play Yard and Crib Mattresses was recalled on 2026-08-06; remedy: refund\./);
     });
     it('treats an empty list as no results', async () => {
-        expect(await searchCpsc(fixtureFetch({ empty: true }).impl, { productName: 'x', since: '2026-01-01' })).toEqual([]);
+        expect(await new CpscClient(fixtureFetch({ empty: true }).impl).search({ productName: 'x', since: '2026-01-01' })).toEqual({ results: [] });
     });
 
     it('treats a 200 carrying CPSC\'s own error row as an upstream failure, not a recall', async () => {
         const row = [{ RecallID: 0, RecallNumber: null, RecallDate: null, Title: 'Error retrieving Recalls: The underlying provider failed on Open.', Products: [] }];
         const impl = async () => new Response(JSON.stringify(row), { status: 200, headers: { 'Content-Type': 'application/json' } });
-        await expect(searchCpsc(impl as never, { since: '2026-04-04' })).rejects.toThrow(/error row/);
+        await expect(new CpscClient(impl as never).search({ since: '2026-04-04' })).rejects.toThrow(/error row.*no saved copy/);
     });
 
-    it('falls back to a date-only fetch and filters locally when the filtered query fails', async () => {
-        const calls: string[] = [];
-        const impl = async (url: string) => {
-            calls.push(url);
-            if (new URL(url).searchParams.has('ProductName')) return new Response('Under Construction', { status: 503 });
-            return new Response(fixture('cpsc-crib.json'), { status: 200, headers: { 'Content-Type': 'application/json' } });
-        };
-        const hit = await searchCpsc(impl as never, { productName: 'crib mattress', since: '2026-07-01' });
-        expect(calls).toHaveLength(2);
-        expect(hit.length).toBeGreaterThan(0);
-        expect(hit[0].id).toBe('26669');
-        expect(await searchCpsc(impl as never, { productName: 'zzz-no-such-thing', since: '2026-07-01' })).toEqual([]);
+    it('lists earlier start dates to fall back on, nearest first, never later than the window', () => {
+        expect(fallbackStarts('2026-04-06')).toEqual(['2026-04-01', '2026-03-01', '2026-01-01']);
+        expect(fallbackStarts('2026-04-01')).toEqual(['2026-03-01', '2026-01-01']);
+        expect(fallbackStarts('2026-01-15')).toEqual(['2026-01-01', '2025-12-01']);
+        // A known date more than 400 days before the window is not tried.
+        expect(fallbackStarts('2027-06-10')).toEqual(['2027-06-01', '2027-05-01']);
+    });
+});
+
+/** A CPSC that answers only the URLs `answers` accepts; every other URL gets 503 "Under Construction". */
+function flakyCpsc(answers: (u: URL) => boolean, body = () => fixture('cpsc-crib.json')) {
+    const calls: string[] = [];
+    const impl = async (url: string) => {
+        calls.push(url);
+        return answers(new URL(url))
+            ? new Response(body(), { status: 200, headers: { 'Content-Type': 'application/json' } })
+            : new Response('Under Construction', { status: 503 });
+    };
+    return { impl: impl as never, calls };
+}
+const start = (u: URL) => u.searchParams.get('RecallDateStart');
+const cacheFile = () => join(mkdtempSync(join(tmpdir(), 'rr-cpsc-')), 'cpsc-cache.json');
+
+describe('CPSC resilient read', () => {
+    it('exact window answers: one request, no note, no warning', async () => {
+        const f = flakyCpsc(() => true);
+        const out = await new CpscClient(f.impl).search({ productName: 'crib mattress', since: '2026-04-06' });
+        expect(f.calls).toHaveLength(1);
+        expect(out.results.map((r) => r.id)).toContain('26669');
+        expect(out.note).toBeUndefined();
+        expect(out.warning).toBeUndefined();
+    });
+
+    it('window URL 503s: falls back to an earlier start date, filters locally, and names the URL that served it', async () => {
+        // The 2026-10-04 shape: 2026-04-06 and 2026-03-01 answer 503, 2026-04-01 answers.
+        const f = flakyCpsc((u) => start(u) === '2026-04-01' && !u.searchParams.has('ProductName'));
+        const out = await new CpscClient(f.impl).search({ productName: 'crib mattress', since: '2026-04-06' });
+        expect(f.calls.map((c) => [start(new URL(c)), new URL(c).searchParams.has('ProductName')])).toEqual([
+            ['2026-04-06', true], ['2026-04-06', false], ['2026-04-01', false],
+        ]);
+        expect(out.results.map((r) => r.id)).toEqual(['26669']);
+        expect(out.note).toMatch(/requested query failed \(2026-04-06 with product filter: CPSC answered HTTP 503; 2026-04-06: CPSC answered HTTP 503\)/);
+        expect(out.note).toContain('served by https://www.saferproducts.gov/RestWebServices/Recall?format=json&RecallDateStart=2026-04-01');
+        expect(out.warning).toBeUndefined();
+        expect(out.results[0].summary).not.toMatch(/saved copy/);
+        expect(await new CpscClient(f.impl).search({ productName: 'zzz-no-such-thing', since: '2026-04-06' })).toMatchObject({ results: [] });
+    });
+
+    it('drops rows earlier than the window when a wider window served them', async () => {
+        const [row] = JSON.parse(fixture('cpsc-crib.json'));
+        const older = { ...row, RecallNumber: '26001', RecallID: 1, RecallDate: '2026-04-20T00:00:00' };
+        const f = flakyCpsc((u) => start(u) === '2026-04-01', () => JSON.stringify([row, older]));
+        const out = await new CpscClient(f.impl).search({ productName: 'crib mattress', since: '2026-05-02' });
+        expect(f.calls.map((c) => start(new URL(c)))).toEqual(['2026-05-02', '2026-05-02', '2026-05-01', '2026-04-01']);
+        expect(out.results.map((r) => r.id)).toEqual(['26669']);
+    });
+
+    it('bounds the attempts', async () => {
+        const f = flakyCpsc(() => false);
+        await expect(new CpscClient(f.impl).search({ productName: 'crib', since: '2026-04-06' })).rejects.toThrow(/5 live CPSC attempts failed/);
+        expect(f.calls.length).toBeLessThanOrEqual(CPSC_MAX_ATTEMPTS);
+    });
+
+    it('every live attempt fails, a saved copy exists: serves it labelled STALE with its fetch time', async () => {
+        const path = cacheFile();
+        const t0 = new Date('2026-10-03T09:00:00Z');
+        const good = flakyCpsc(() => true);
+        await new CpscClient(good.impl, { cachePath: path, now: () => t0 }).search({ productName: 'crib mattress', since: '2026-04-01' });
+        expect(existsSync(path)).toBe(true);
+
+        // A new process (fresh client, cache read from disk), and CPSC is down everywhere.
+        const down = flakyCpsc(() => false);
+        const out = await new CpscClient(down.impl, { cachePath: path }).search({ productName: 'crib mattress', since: '2026-04-06' });
+        expect(down.calls.length).toBeGreaterThan(0);
+        expect(out.results.map((r) => r.id)).toEqual(['26669']);
+        expect(out.warning).toMatch(/^US CPSC unavailable live: \d live CPSC attempts failed .*Showing a STALE saved copy fetched 2026-10-03T09:00:00.000Z from .*RecallDateStart=2026-04-01.*: 1 matching row\.$/);
+        expect(out.results[0].summary).toMatch(/\(From a saved copy of CPSC data fetched 2026-10-03; CPSC could not be reached live\.\)$/);
+        expect(out.note).toBeUndefined();
+    });
+
+    it('a saved copy for a different product is not used for this one; a date-only copy is, filtered', async () => {
+        const path = cacheFile();
+        await new CpscClient(flakyCpsc(() => true).impl, { cachePath: path }).search({ productName: 'stroller', since: '2026-01-01' });
+        const down = flakyCpsc(() => false);
+        await expect(new CpscClient(down.impl, { cachePath: path }).search({ productName: 'crib mattress', since: '2026-04-06' }))
+            .rejects.toThrow(/no saved copy/);
+        await new CpscClient(flakyCpsc(() => true).impl, { cachePath: path }).search({ since: '2026-01-01' });
+        const out = await new CpscClient(down.impl, { cachePath: path }).search({ productName: 'crib mattress', since: '2026-04-06' });
+        expect(out.results.map((r) => r.id)).toEqual(['26669']);
+        expect(out.warning).toMatch(/STALE/);
+    });
+
+    it('every live attempt fails and there is no saved copy: a source failure, nothing invented', async () => {
+        const f = flakyCpsc(() => false);
+        await expect(new CpscClient(f.impl, { cachePath: cacheFile() }).search({ productName: 'crib mattress', since: '2026-04-06' }))
+            .rejects.toThrow(/live CPSC attempts failed .*no saved copy to fall back on/);
     });
 });
 

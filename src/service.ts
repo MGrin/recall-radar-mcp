@@ -1,6 +1,6 @@
 /** Cross-source search. The only layer the MCP tools talk to. */
 import { isoDaysAgo, UpstreamError } from './http-util.js';
-import { searchCpsc } from './sources/cpsc.js';
+import { CpscClient, type CpscOutcome } from './sources/cpsc.js';
 import { fetchEmaShortages, matchesMedicine } from './sources/ema.js';
 import { searchOpenFda, type FdaCategory } from './sources/openfda.js';
 import { getSafetyGateXml, matchesEuQuery, parseReport, parseReportList, reportUrl, selectReports, SG_LIST_URL, type ReportRef } from './sources/safetygate.js';
@@ -9,9 +9,13 @@ import type { WatchItem } from './watchlist.js';
 
 export interface SearchResult {
     results: Recall[];
-    /** One line per source that failed; the others still answered. */
+    /** One line per source that failed; the others still answered. A source served only from a stale saved copy is here too. */
     warnings: string[];
+    /** One line per source that answered live, but from a different URL than the plain request. */
+    notes: string[];
 }
+
+type Job = () => Promise<Recall[] | CpscOutcome>;
 
 export const EMA_CACHE_MS = 60 * 60 * 1000;
 /** The Safety Gate index changes weekly; a published weekly report does not change at all. */
@@ -27,7 +31,14 @@ export class RecallService {
     private sgList: { at: number; rows: ReportRef[] } | null = null;
     private readonly sgReports = new Map<string, Recall[]>();
     private readonly sgSlot = limiter(SG_CONCURRENCY);
-    constructor(private readonly fetchImpl: FetchLike, private readonly now: () => Date = () => new Date()) {}
+    private readonly cpsc: CpscClient;
+    constructor(
+        private readonly fetchImpl: FetchLike,
+        private readonly now: () => Date = () => new Date(),
+        opts: { cpscCachePath?: string } = {},
+    ) {
+        this.cpsc = new CpscClient(fetchImpl, { cachePath: opts.cpscCachePath, now });
+    }
 
     today(): string {
         return this.now().toISOString().slice(0, 10);
@@ -79,7 +90,7 @@ export class RecallService {
         }
         const { reports, truncated } = selectReports(list, q.since, this.today());
         const since = truncated ? reports[reports.length - 1].date : q.since;
-        if (!reports.length) return { results: [], warnings: [], since };
+        if (!reports.length) return { results: [], warnings: [], notes: [], since };
         const jobs = Object.fromEntries(reports.map((ref) => [
             `EU Safety Gate ${ref.reference}`,
             async () => (await this.safetyGateReport(ref)).filter((r) => matchesEuQuery(r, q.query)),
@@ -89,24 +100,29 @@ export class RecallService {
     }
 
     /** Run named lookups in parallel; keep what succeeded, turn failures into warnings. */
-    private async gather(jobs: Record<string, () => Promise<Recall[]>>): Promise<SearchResult> {
+    private async gather(jobs: Record<string, Job>): Promise<SearchResult> {
         const names = Object.keys(jobs);
         const settled = await Promise.allSettled(names.map((n) => jobs[n]()));
         const results: Recall[] = [];
         const warnings: string[] = [];
+        const notes: string[] = [];
         settled.forEach((s, i) => {
-            if (s.status === 'fulfilled') results.push(...s.value);
-            else warnings.push(`${names[i]} unavailable: ${s.reason instanceof Error ? s.reason.message : String(s.reason)}`);
+            if (s.status === 'fulfilled') {
+                const out = Array.isArray(s.value) ? { results: s.value } : s.value;
+                results.push(...out.results);
+                if (out.warning) warnings.push(out.warning);
+                if (out.note) notes.push(out.note);
+            } else warnings.push(`${names[i]} unavailable: ${s.reason instanceof Error ? s.reason.message : String(s.reason)}`);
         });
         if (names.length > 0 && warnings.length === names.length) {
             throw new UpstreamError(`Every source failed. ${warnings.join('; ')}`, 'all');
         }
-        return { results: dedupe(results).sort(byDateDesc), warnings };
+        return { results: dedupe(results).sort(byDateDesc), warnings: [...new Set(warnings)], notes: [...new Set(notes)] };
     }
 
     async products(q: { query: string; since: string; limit: number }): Promise<SearchResult> {
         const r = await this.gather({
-            'US CPSC': () => searchCpsc(this.fetchImpl, { productName: q.query, since: q.since }),
+            'US CPSC': () => this.cpsc.search({ productName: q.query, since: q.since }),
             'openFDA devices': () => searchOpenFda(this.fetchImpl, 'device', { terms: [q.query], since: q.since, until: this.today(), limit: q.limit }),
         });
         return { ...r, results: r.results.slice(0, q.limit) };
@@ -125,7 +141,7 @@ export class RecallService {
     }
 
     async medicines(q: { query: string; since: string; limit: number; region: 'us' | 'eu' | 'all' }): Promise<SearchResult> {
-        const jobs: Record<string, () => Promise<Recall[]>> = {};
+        const jobs: Record<string, Job> = {};
         if (q.region !== 'eu') {
             jobs['openFDA drugs'] = () => searchOpenFda(this.fetchImpl, 'drug', { terms: [q.query], since: q.since, until: this.today(), limit: q.limit });
         }
@@ -147,10 +163,13 @@ export class RecallService {
         const products = want('product');
         const food = want('food');
         const meds = want('medicine');
-        const jobs: Record<string, () => Promise<Recall[]>> = {};
+        const jobs: Record<string, Job> = {};
         if (products.length) {
-            jobs['US CPSC'] = async () =>
-                (await Promise.all(products.map((p) => searchCpsc(this.fetchImpl, { productName: p, since })))).flat();
+            jobs['US CPSC'] = async () => {
+                const outs = await Promise.all(products.map((p) => this.cpsc.search({ productName: p, since })));
+                const joined = (k: 'note' | 'warning') => [...new Set(outs.map((o) => o[k]).filter(Boolean))].join(' ') || undefined;
+                return { results: outs.flatMap((o) => o.results), note: joined('note'), warning: joined('warning') };
+            };
             jobs['openFDA devices'] = () => searchOpenFda(this.fetchImpl, 'device', { terms: products, since, until: this.today(), limit: 100 });
         }
         if (food.length) jobs['openFDA food'] = () => searchOpenFda(this.fetchImpl, 'food', { terms: food, since, until: this.today(), limit: 100 });

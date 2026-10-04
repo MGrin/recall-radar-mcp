@@ -55,7 +55,7 @@ docker run --rm -p 3000:3000 -e OPENAI_API_KEY recall-radar-mcp   # with a model
 |---|---|---|
 | `PORT` | `3000` | HTTP port |
 | `HOST` | `127.0.0.1` (`0.0.0.0` in Docker) | bind address |
-| `WATCHLIST_PATH` | `./data/watchlist.json` | where the household watchlist is stored |
+| `WATCHLIST_PATH` | `./data/watchlist.json` | where the household watchlist is stored; CPSC's last good responses are saved beside it as `cpsc-cache.json` |
 | `ALLOWED_ORIGINS` | *(none)* | extra browser `Origin`s allowed besides localhost (comma-separated, `*` for any) |
 | `MODEL_PROVIDER` | `openai` if `OPENAI_API_KEY` is set, else `scripted` | `openai`, `ollama` or `scripted` |
 | `OPENAI_API_KEY` | *(none)* | OpenAI key; never logged or sent to the browser |
@@ -160,7 +160,20 @@ Each tool declares a zod input schema and an `outputSchema`; results come back a
 ```
 
 If one upstream is down, the others still answer and the result lists a warning; if every source for
-a question is down, the tool returns a clean MCP tool error (`isError: true`). Every upstream request
+a question is down, the tool returns a clean MCP tool error (`isError: true`).
+
+CPSC's API has answered some URLs and 503'd others, consistently per URL, for days at a time (seen
+2026-10-02 to 10-04). So a CPSC read tries the window's own URL, then the same window without the
+product filter, then up to three EARLIER start dates (the 1st of the month, the 1st of the month
+before, a few dates that answered during the outage), and filters the rows here to the requested
+window: at most 6 requests in 20 seconds. When an earlier URL served the answer, the result says so
+in `notes`, naming that URL. Every good CPSC response is also saved beside the watchlist
+(`cpsc-cache.json`, the last 8 URLs, each with its fetch time). If every live attempt fails, the
+rows of the freshest saved copy that fall inside the window are served, each summary ending
+"From a saved copy of CPSC data fetched <date>; CPSC could not be reached live", and a warning
+names the fetch time; with no saved copy, CPSC is reported unavailable. Nothing else is invented.
+
+Every upstream request
 has a 10-second timeout (20 seconds for Safety Gate). The EMA file is cached for an hour in memory,
 because EMA rate-limits repeated downloads. Safety Gate publishes one weekly report every Friday, each
 about 200-300 KB and 3-6 seconds to serve (2026-10-02): a search reads at most 12 reports, four at a

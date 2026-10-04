@@ -7,12 +7,12 @@
     "url": "https://github.com/MGrin/recall-radar-mcp",
     "source": "github"
   },
-  "version": "0.2.0",
+  "version": "0.2.1",
   "packages": [
     {
       "registryType": "mcpb",
-      "identifier": "https://github.com/MGrin/recall-radar-mcp/releases/download/v0.2.0/household-recall-watch.mcpb",
-      "fileSha256": "88d8c1be25487fcbf66da7b0306db67b4d95c5fde55e08f01384b18abdf3aa1c",
+      "identifier": "https://github.com/MGrin/recall-radar-mcp/releases/download/v0.2.1/household-recall-watch.mcpb",
+      "fileSha256": "3e0073bc2fff21edfbac55edd549174ebfca8bd74e9617eac2d3446e95be3260",
       "transport": {
         "type": "stdio"
       }

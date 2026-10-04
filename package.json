@@ -1,6 +1,6 @@
 {
   "name": "recall-radar-mcp",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Household recall radar: an MCP server (Streamable HTTP) over public CPSC, openFDA, EMA and EU Safety Gate data, built for voice assistants.",
   "license": "MIT",
   "author": "Nikita Grishin Limited",

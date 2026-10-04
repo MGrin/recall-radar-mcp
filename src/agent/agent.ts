@@ -37,7 +37,7 @@ export interface HistoryTurn {
 }
 
 export async function withMcp<T>(mcpUrl: string, fn: (client: Client) => Promise<T>): Promise<T> {
-    const client = new Client({ name: 'recall-radar-agent', version: '0.2.0' });
+    const client = new Client({ name: 'recall-radar-agent', version: '0.2.1' });
     await client.connect(new StreamableHTTPClientTransport(new URL(mcpUrl)));
     try {
         return await fn(client);

@@ -1,4 +1,5 @@
 /** The MCP server: eight tools, voice-shaped output, structured content on every result. */
+import { dirname, join } from 'node:path';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
@@ -8,7 +9,7 @@ import { SAFETY_GATE_ATTRIBUTION } from './sources/safetygate.js';
 import { KINDS, Watchlist, WatchItemSchema } from './watchlist.js';
 
 export const SERVER_NAME = 'recall-radar';
-export const SERVER_VERSION = '0.2.0';
+export const SERVER_VERSION = '0.2.1';
 export const DISCLAIMER = 'Not medical or safety advice: always check the linked notice and ask a pharmacist, doctor or the manufacturer.';
 
 export interface Deps {
@@ -22,9 +23,11 @@ export const HOUSEHOLD_DEFAULT_DAYS = 180;
 /** Default look-back of search_eu_product_recalls: four weekly Safety Gate reports. */
 export const EU_DEFAULT_DAYS = 28;
 
-export function makeDeps(opts: { fetchImpl?: FetchLike; watchlistPath: string; now?: () => Date }): Deps {
+/** CPSC's last good responses are kept beside the watchlist, for when CPSC cannot be reached live. */
+export function makeDeps(opts: { fetchImpl?: FetchLike; watchlistPath: string; now?: () => Date; cpscCachePath?: string }): Deps {
+    const cpscCachePath = opts.cpscCachePath ?? join(dirname(opts.watchlistPath), 'cpsc-cache.json');
     return {
-        service: new RecallService(opts.fetchImpl ?? ((u, i) => fetch(u, i)), opts.now),
+        service: new RecallService(opts.fetchImpl ?? ((u, i) => fetch(u, i)), opts.now, { cpscCachePath }),
         watchlist: new Watchlist(opts.watchlistPath),
     };
 }
@@ -38,7 +41,8 @@ const searchOutput = {
     since: z.string(),
     count: z.number().int(),
     results: z.array(RecallSchema),
-    warnings: z.array(z.string()).describe('Sources that could not be reached; the rest still answered.'),
+    warnings: z.array(z.string()).describe('Sources that could not be reached, or were served only from a stale saved copy; the rest still answered.'),
+    notes: z.array(z.string()).optional().describe('Sources that answered live, but from a different URL than the plain request (for example an earlier CPSC start date, filtered here to the window).'),
     disclaimer: z.string(),
 };
 
@@ -52,8 +56,12 @@ function spokenFor(kind: string, query: string, since: string, r: SearchResult):
         : `I found ${plural(r.results.length, kind.replace(/s$/, ''))} for "${query}" since ${since}. The most recent: ${r.results[0].summary}`;
     const more = r.results.length > 1 ? ` Next: ${r.results[1].summary}` : '';
     const warn = r.warnings.length ? ` Note: ${r.warnings.length === 1 ? 'one source was' : 'some sources were'} unavailable, so this may be incomplete.` : '';
-    return head + more + warn;
+    return head + more + warn + staleLine(r.warnings);
 }
+
+/** Said aloud whenever a source answered only from a saved copy, so stale is never heard as live. */
+const staleLine = (warnings: string[]) =>
+    warnings.some((w) => w.includes('STALE saved copy')) ? ' CPSC results come from a saved copy, not a live check.' : '';
 
 function ok(structured: Record<string, unknown> & { spoken: string }, extraText?: string): CallToolResult {
     return {
@@ -263,6 +271,7 @@ export function createServer(deps: Deps): McpServer {
                 count: z.number().int(),
                 matches: z.array(RecallSchema.extend({ matchedItems: z.array(z.string()) })),
                 warnings: z.array(z.string()),
+                notes: z.array(z.string()).optional().describe('Sources that answered live, but from a different URL than the plain request (for example an earlier CPSC start date, filtered here to the window).'),
                 disclaimer: z.string(),
             },
             annotations: readOnly,
@@ -280,8 +289,8 @@ export function createServer(deps: Deps): McpServer {
             let spoken = matches.length === 0
                 ? `Good news: none of your ${plural(items.length, 'watched item')} matched a recall or shortage since ${from}.`
                 : `${plural(matches.length, 'alert')} since ${from}${hitItems.length ? `, about ${hitItems.join(', ')}` : ''}. The most recent: ${matches[0].summary}`;
-            if (r.warnings.length) spoken += ' Some sources were unavailable, so this may be incomplete.';
-            return ok({ spoken, since: from, watched, count: matches.length, matches, warnings: r.warnings, disclaimer: DISCLAIMER }, sourcesLine(matches));
+            if (r.warnings.length) spoken += ` Some sources were unavailable, so this may be incomplete.${staleLine(r.warnings)}`;
+            return ok({ spoken, since: from, watched, count: matches.length, matches, warnings: r.warnings, notes: r.notes, disclaimer: DISCLAIMER }, sourcesLine(matches));
         }),
     );
 
