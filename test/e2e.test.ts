@@ -11,9 +11,9 @@ import { HOUSEHOLD_DEFAULT_DAYS } from '../src/server.js';
 
 type Structured = Record<string, any>;
 
-async function start(fetchOpts: Parameters<typeof fixtureFetch>[0] = {}) {
+async function start(fetchOpts: Parameters<typeof fixtureFetch>[0] = {}, watchlistPath = tmpWatchlist()) {
     const f = fixtureFetch(fetchOpts);
-    const app = createApp(makeDeps({ fetchImpl: f.impl, watchlistPath: tmpWatchlist(), now: NOW }));
+    const app = createApp(makeDeps({ fetchImpl: f.impl, watchlistPath, now: NOW }));
     await new Promise<void>((r) => app.listen(0, '127.0.0.1', r));
     const base = `http://127.0.0.1:${(app.address() as AddressInfo).port}`;
     return { app, base, calls: f.calls };
@@ -170,7 +170,8 @@ describe('HTTP server (upstream failures)', () => {
         const { app, base } = await start({ fail: { cpsc: 'network' } });
         const client = await connect(base);
         const s = (await client.callTool({ name: 'search_product_recalls', arguments: { query: 'crib' } })).structuredContent as Structured;
-        expect(s.warnings).toEqual(['US CPSC unavailable: CPSC request failed: fetch failed']);
+        expect(s.warnings).toHaveLength(1);
+        expect(s.warnings[0]).toMatch(/^US CPSC unavailable: 4 live CPSC attempts failed \(.*CPSC request failed: fetch failed.*\); no saved copy to fall back on$/);
         expect(s.results.length).toBeGreaterThan(0);
         expect(s.spoken).toMatch(/may be incomplete/);
         await client.close();
@@ -186,5 +187,35 @@ describe('HTTP server (upstream failures)', () => {
         expect((await fetch(`${base}/healthz`)).status).toBe(200);
         await client.close();
         await close(app);
+    });
+
+    it('the judge path survives CPSC 503ing the default window: live fallback first, then a labelled stale copy', async () => {
+        const watchlistPath = tmpWatchlist();
+        // Default window from the test clock starts 2026-03-30; only the 2026-03-01 date-only URL answers.
+        let up = await start({ cpscAnswers: (u) => u.searchParams.get('RecallDateStart') === '2026-03-01' && !u.searchParams.has('ProductName') }, watchlistPath);
+        let client = await connect(up.base);
+        await client.callTool({ name: 'watchlist_add', arguments: { name: 'crib mattress', kind: 'product' } });
+        let h = (await client.callTool({ name: 'check_my_household', arguments: {} })).structuredContent as Structured;
+        expect(h.since).toBe('2026-03-30');
+        expect(h.matches.map((m: Structured) => [m.source, m.id])).toContainEqual(['cpsc', '26669']);
+        expect(h.warnings).toEqual([]);
+        expect(h.notes).toHaveLength(1);
+        expect(h.notes[0]).toMatch(/served by https:\/\/www\.saferproducts\.gov\/RestWebServices\/Recall\?format=json&RecallDateStart=2026-03-01, filtered here to "crib mattress" on or after 2026-03-30/);
+        expect(h.spoken).not.toMatch(/incomplete|saved copy/);
+        await client.close();
+        await close(up.app);
+
+        // Restart on the same data dir with CPSC down everywhere: the saved copy answers, labelled stale.
+        up = await start({ fail: { cpsc: 'http500' } }, watchlistPath);
+        client = await connect(up.base);
+        h = (await client.callTool({ name: 'check_my_household', arguments: {} })).structuredContent as Structured;
+        const cpsc = h.matches.find((m: Structured) => m.source === 'cpsc');
+        expect(cpsc.id).toBe('26669');
+        expect(cpsc.summary).toMatch(/From a saved copy of CPSC data fetched \d{4}-\d{2}-\d{2}; CPSC could not be reached live/);
+        expect(h.warnings).toHaveLength(1);
+        expect(h.warnings[0]).toMatch(/^US CPSC unavailable live: .*Showing a STALE saved copy fetched /);
+        expect(h.spoken).toMatch(/may be incomplete\. CPSC results come from a saved copy, not a live check\.$/);
+        await client.close();
+        await close(up.app);
     });
 });
